@@ -1,0 +1,52 @@
+bundle: kubernetes
+name: iam
+applications:
+  hydra:
+    charm: hydra
+    channel: edge
+    scale: 1
+    series: jammy
+    trust: true
+  kratos:
+    charm: kratos
+    channel: edge
+    scale: 1
+    series: jammy
+    trust: true
+  kratos-external-idp-integrator:
+    charm: kratos-external-idp-integrator
+    channel: edge
+    scale: 1
+    series: jammy
+# No release published yet
+#  identity-platform-login-ui:
+#    charm: identity-platform-login-ui
+#    channel: edge
+#    scale: 1
+#    series: jammy
+  postgresql-k8s:
+    charm: postgresql-k8s
+    channel: edge
+    series: jammy
+    scale: 1
+    trust: true
+  traefik-admin:
+    charm: traefik-k8s
+    channel: edge
+    series: focal
+    scale: 1
+  traefik-public:
+    charm: traefik-k8s
+    channel: edge
+    series: focal
+    scale: 1
+relations:
+  - [hydra:pg-database, postgresql-k8s:database]
+  - [kratos:pg-database, postgresql-k8s:database]
+  - [kratos:endpoint-info, hydra:endpoint-info]
+  - [kratos-external-idp-integrator:kratos-external-idp, kratos:kratos-external-idp]
+  - [hydra:admin-ingress, traefik-admin:ingress]
+  - [hydra:public-ingress, traefik-public:ingress]
+  - [kratos:admin-ingress, traefik-admin:ingress]
+  - [kratos:public-ingress, traefik-public:ingress]
+#  - [identity-platform-login-ui:ingress, traefik-public:ingress]

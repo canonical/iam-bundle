@@ -1,0 +1,42 @@
+name: Publish and release to latest/edge
+
+on:
+  workflow_call:
+    secrets:
+      CHARMCRAFT_CREDENTIALS:
+        required: true
+
+jobs:
+  publish-bundle:
+    name: Publish iam-bundle
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        bundle: iam
+    env:
+      CHARMCRAFT_AUTH: ${{ secrets.CHARMCRAFT_CREDENTIALS }}
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install dependencies
+        run: sudo snap install charmcraft --classic --channel=latest/edge
+      - name: Pack and publish bundle
+        run: |
+          set -ex
+          # Use a temporary directory to support publishing any of the bundles in this root dir
+          BUILD_DIR=.bundle_build
+          mkdir $BUILD_DIR
+          cp ./releases/latest/edge/bundle.yaml $BUILD_DIR/
+          # Reuse the same charmcraft.yaml and readme for all bundles
+          cp ./charmcraft.yaml $BUILD_DIR/
+          cp ./README.md $BUILD_DIR/
+          cd $BUILD_DIR
+          charmcraft pack --destructive-mode
+          charmcraft upload ./*.zip
+          export REVISION=$(charmcraft revisions ${{ matrix.bundle }} 2>&1 | awk 'NR==2 {print $1}')
+          charmcraft release ${{ matrix.bundle }} --revision $REVISION --channel=latest/edge
+      - name: Dump logs
+        if: failure()
+        run: |
+          printenv | sed 's;=.*;;' | sort
+          awk '{print}' /home/runner/snap/charmcraft/common/cache/charmcraft/log/*.log

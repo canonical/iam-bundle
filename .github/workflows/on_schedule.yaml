@@ -1,0 +1,8 @@
+on:
+  schedule:
+    - cron: '0 8 * * SUN'
+
+jobs:
+  tests:
+    name: Run Tests
+    uses: ./.github/workflows/tests.yaml
