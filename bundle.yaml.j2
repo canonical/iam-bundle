@@ -1,27 +1,29 @@
+---
+{%- set testing = testing is defined and testing.casefold() in ["1", "yes", "true"] %}
 bundle: kubernetes
 name: iam
 applications:
   hydra:
     charm: hydra
-    channel: edge
+    channel: {{ channel|default('edge', true) }}
     scale: 1
     series: jammy
     trust: true
   kratos:
     charm: kratos
-    channel: edge
+    channel: {{ channel|default('edge', true) }}
     scale: 1
     series: jammy
     trust: true
   kratos-external-idp-integrator:
     charm: kratos-external-idp-integrator
-    channel: edge
+    channel: {{ channel|default('edge', true) }}
     scale: 1
     series: jammy
-# No release published yet
+# TODO: Uncomment when https://github.com/canonical/kratos-ui-operator is published
 #  identity-platform-login-ui:
 #    charm: identity-platform-login-ui
-#    channel: edge
+#    channel: {{ channel|default('edge', true) }}
 #    scale: 1
 #    series: jammy
   postgresql-k8s:
@@ -30,6 +32,15 @@ applications:
     series: jammy
     scale: 1
     trust: true
+  tls-certificates-operator:
+    charm: tls-certificates-operator
+    channel: stable
+    scale: 1
+    {%- if testing %}
+    options:
+      ca-common-name: test-domain
+      generate-self-signed-certificates: true
+    {%- endif %}
   traefik-admin:
     charm: traefik-k8s
     channel: edge
@@ -49,4 +60,7 @@ relations:
   - [hydra:public-ingress, traefik-public:ingress]
   - [kratos:admin-ingress, traefik-admin:ingress]
   - [kratos:public-ingress, traefik-public:ingress]
+# TODO: Uncomment when https://github.com/canonical/kratos-ui-operator is published
 #  - [identity-platform-login-ui:ingress, traefik-public:ingress]
+  - [traefik-admin:certificates, tls-certificates-operator:certificates]
+  - [traefik-public:certificates, tls-certificates-operator:certificates]

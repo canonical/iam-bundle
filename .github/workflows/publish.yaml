@@ -7,8 +7,8 @@ on:
         required: true
 
 jobs:
-  publish-bundle:
-    name: Publish iam-bundle
+  publish-bundle-edge:
+    name: Publish iam-bundle in edge channel
     runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
@@ -26,7 +26,8 @@ jobs:
           # Use a temporary directory to support publishing any of the bundles in this root dir
           BUILD_DIR=.bundle_build
           mkdir $BUILD_DIR
-          cp ./releases/latest/edge/bundle.yaml $BUILD_DIR/
+          tox -e render-edge
+          cp ./bundle-edge.yaml $BUILD_DIR/
           # Reuse the same charmcraft.yaml and readme for all bundles
           cp ./charmcraft.yaml $BUILD_DIR/
           cp ./README.md $BUILD_DIR/
