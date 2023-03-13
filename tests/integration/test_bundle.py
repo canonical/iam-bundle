@@ -19,7 +19,7 @@ def get_this_script_dir() -> Path:
 
 
 @pytest.mark.abort_on_fail
-async def render_bundle(ops_test: OpsTest):
+async def test_render_bundle(ops_test: OpsTest):
     """Render the bundle from template using ops_test"""
     await ops_test.model.set_config({"logging-config": "<root>=WARNING; unit=DEBUG"})
 
