@@ -11,6 +11,8 @@ from pathlib import Path
 import pytest
 from pytest_operator.plugin import OpsTest
 
+logger = logging.getLogger(__name__)
+
 
 def get_this_script_dir() -> Path:
     filename = inspect.getframeinfo(inspect.currentframe()).filename  # type: ignore[arg-type]
