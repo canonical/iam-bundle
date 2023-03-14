@@ -28,14 +28,14 @@ async def test_render_bundle(ops_test: OpsTest):
     logger.info("Rendering bundle %s", get_this_script_dir() / ".." / ".." / "bundle.yaml.j2")
 
     # set the "testing" template variable so the template renders for testing
-    context["testing"] = "true"
-    # test in edge channel
-    context["channel"] = "edge"
+    context = {"testing": "true", "channel": "edge"}
 
-    logger.debug("context: %s", context)
+    logger.debug(f"Using context {context}")
 
     rendered_bundle = ops_test.render_bundle(
         get_this_script_dir() / ".." / ".." / "bundle.yaml.j2", context=context
     )
+
+    logger.info(f"Rendered bundle {str(rendered_bundle)}")
 
     assert rendered_bundle
