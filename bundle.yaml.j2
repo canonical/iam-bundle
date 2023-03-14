@@ -54,6 +54,15 @@ applications:
     series: focal
     scale: 1
     trust: true
+# TODO: Uncomment when oauth relation interface is available
+#  {%- if testing %}
+#  grafana-k8s:
+#    charm: grafana-k8s
+#    channel: edge
+#    series: jammy
+#    scale: 1
+#    trust: true
+#  {%- endif %}
 relations:
   - [hydra:pg-database, postgresql-k8s:database]
   - [kratos:pg-database, postgresql-k8s:database]
@@ -65,5 +74,9 @@ relations:
   - [kratos:public-ingress, traefik-public:ingress]
 # TODO: Uncomment when https://github.com/canonical/kratos-ui-operator is published
 #  - [identity-platform-login-ui:ingress, traefik-public:ingress]
+# TODO: Uncomment when oauth relation interface is available
+#  {% if testing -%}
+#  - [grafana:oauth, hydra:oauth]
+#  {% endif -%}
   - [traefik-admin:certificates, tls-certificates-operator:certificates]
   - [traefik-public:certificates, tls-certificates-operator:certificates]
