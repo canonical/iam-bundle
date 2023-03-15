@@ -27,10 +27,11 @@ jobs:
           BUILD_DIR=.bundle_build
           mkdir $BUILD_DIR
           tox -e render-edge
-          cp ./bundle-edge.yaml $BUILD_DIR/
-          # Reuse the same charmcraft.yaml and readme for all bundles
+          cp ./bundle-edge.yaml $BUILD_DIR/bundle.yaml
+          # Reuse the same charmcraft.yaml, license and readme for all bundles
           cp ./charmcraft.yaml $BUILD_DIR/
           cp ./README.md $BUILD_DIR/
+          cp ./LICENSE $BUILD_DIR/
           cd $BUILD_DIR
           charmcraft pack
           charmcraft upload ./*.zip
