@@ -10,11 +10,3 @@ jobs:
   tests:
     name: Run Tests
     uses: ./.github/workflows/tests.yaml
-
-  # TODO: Remove once tested
-  publish-bundle:
-    name: Publish Bundle
-    needs: tests
-    uses: ./.github/workflows/publish.yaml
-    secrets:
-      CHARMCRAFT_CREDENTIALS: ${{ secrets.CHARMCRAFT_CREDENTIALS }}
