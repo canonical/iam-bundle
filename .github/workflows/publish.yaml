@@ -17,9 +17,13 @@ jobs:
     env:
       CHARMCRAFT_AUTH: ${{ secrets.CHARMCRAFT_CREDENTIALS }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Install dependencies
-        run: sudo snap install charmcraft --classic --channel=latest/edge
+        run: |
+          sudo snap install charmcraft --classic --channel=latest/edge
+          sudo apt-get update -yqq
+          sudo apt-get install -yqq python3-pip
+          sudo --preserve-env=http_proxy,https_proxy,no_proxy pip3 install tox
       - name: Pack and publish bundle
         run: |
           set -ex
