@@ -1,0 +1,56 @@
+name: Tests
+on:
+  workflow_dispatch:
+  workflow_call:
+
+jobs:
+  integration-test-microk8s:
+    name: Integration tests (microk8s)
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup operator environment
+        uses: charmed-kubernetes/actions-operator@main
+        with:
+          provider: microk8s
+          channel: 1.26-strict/stable
+          juju-channel: 3.1
+          bootstrap-options: '--agent-version=3.1.0'
+
+      - name: Run integration tests
+        run: tox -e integration -- --model testing
+
+      # Print out logs and metadata to assist in troubleshooting
+      - name: Get contexts
+        run: kubectl config view
+        if: failure()
+
+      - name: Get all
+        run: kubectl get all -A
+        if: failure()
+
+      - name: Describe deployments
+        run: kubectl describe deployments -n testing
+        if: failure()
+
+      - name: Describe replicasets
+        run: kubectl describe replicasets -n testing
+        if: failure()
+
+      - name: Describe pods
+        run: kubectl describe pods -n testing
+        if: failure()
+
+      - name: Get operator controller logs
+        run: kubectl logs -n testing --tail 1000 --selector operator.juju.is/name=modeloperator
+        if: failure()
+
+      - name: Get juju status
+        run: juju status --relations
+        if: failure()
+
+      - name: Get juju logs
+        run: juju debug-log --replay
+        if: failure()

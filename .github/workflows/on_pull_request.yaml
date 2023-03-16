@@ -1,8 +1,12 @@
-name: Tests
+name: On Pull Request
+
+# On pull_request, we:
+# * always run tests
+
 on:
   pull_request:
 
 jobs:
-  run-tests:
+  tests:
     name: Run Tests
-    uses: ./.github/workflows/ci.yaml
+    uses: ./.github/workflows/tests.yaml
