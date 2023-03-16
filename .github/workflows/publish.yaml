@@ -45,4 +45,4 @@ jobs:
         if: failure()
         run: |
           printenv | sed 's;=.*;;' | sort
-          awk '{print}' /home/runner/snap/charmcraft/common/cache/charmcraft/log/*.log
+          awk '{print}' /home/runner/.local/state/charmcraft/log/*.log
