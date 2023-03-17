@@ -1,10 +1,12 @@
 name: Publish and release to latest/edge
 
 on:
-  workflow_call:
-    secrets:
-      CHARMCRAFT_CREDENTIALS:
-        required: true
+  push:
+    branches:
+      - main
+      - track/**
+    paths:
+      - "./bundle.yaml.j2"
 
 jobs:
   publish-bundle-edge:
