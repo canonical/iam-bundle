@@ -18,6 +18,7 @@ jobs:
           channel: 1.26-strict/stable
           juju-channel: 3.1
           bootstrap-options: '--agent-version=3.1.0'
+          microk8s-addons: "metallb:10.64.140.43-10.64.140.49"
 
       - name: Run integration tests
         run: tox -e integration -- --model testing
