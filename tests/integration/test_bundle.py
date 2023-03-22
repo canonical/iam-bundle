@@ -35,7 +35,6 @@ async def test_render_and_deploy_bundle(ops_test: OpsTest):
     """Render the bundle from template and deploy using ops_test."""
     await ops_test.model.set_config({"logging-config": "<root>=WARNING; unit=DEBUG"})
 
-    # logger.info("Rendering bundle %s", get_this_script_dir() / ".." / ".." / "bundle.yaml.j2")
     logger.info(f"Rendering bundle {get_this_script_dir() / '.. '/ '..' / 'bundle.yaml.j2'}")
 
     # set the "testing" template variable so the template renders for testing
