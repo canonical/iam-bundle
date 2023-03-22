@@ -21,6 +21,10 @@ jobs:
 
       - name: Run integration tests
         run: tox -e integration -- --model testing
+        env:
+          KRATOS_EXTERNAL_IDP_CLIENT_ID: ${{ secrets.KRATOS_EXTERNAL_IDP_CLIENT_ID }}
+          KRATOS_EXTERNAL_IDP_TENANT_ID: ${{ secrets.KRATOS_EXTERNAL_IDP_TENANT_ID }}
+          KRATOS_EXTERNAL_IDP_CLIENT_SECRET: ${{ secrets.KRATOS_EXTERNAL_IDP_CLIENT_SECRET }}
 
       # Print out logs and metadata to assist in troubleshooting
       - name: Get contexts
