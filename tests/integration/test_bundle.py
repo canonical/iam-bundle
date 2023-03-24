@@ -59,13 +59,12 @@ async def test_render_and_deploy_bundle(ops_test: OpsTest):
         }
     )
 
-    async with ops_test.fast_forward():
-        await ops_test.model.wait_for_idle(
-            raise_on_blocked=False,
-            raise_on_error=False,
-            status="active",
-            timeout=1000,
-        )
+    await ops_test.model.wait_for_idle(
+        raise_on_blocked=False,
+        raise_on_error=False,
+        status="active",
+        timeout=1000,
+    )
 
 
 @pytest.mark.abort_on_fail
