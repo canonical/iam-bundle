@@ -32,6 +32,14 @@ jobs:
           KRATOS_EXTERNAL_IDP_CLIENT_SECRET: ${{ secrets.KRATOS_EXTERNAL_IDP_CLIENT_SECRET }}
 
       # Print out logs and metadata to assist in troubleshooting
+      - name: Get traefik-admin juju logs
+        run: juju debug-log --replay --include traefik-admin/0
+        if: failure()
+
+      - name: Get traefik-public juju logs
+        run: juju debug-log --replay --include traefik-public/0
+        if: failure()
+
       - name: Get contexts
         run: kubectl config view
         if: failure()
