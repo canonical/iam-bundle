@@ -39,7 +39,7 @@ applications:
     scale: 1
     {%- if testing %}
     options:
-      ca-common-name: test-domain
+      ca-common-name: demo.ca.local
       generate-self-signed-certificates: true
     {%- endif %}
   traefik-admin:
