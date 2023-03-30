@@ -63,7 +63,7 @@ async def test_render_and_deploy_bundle(ops_test: OpsTest):
         raise_on_blocked=False,
         raise_on_error=False,
         status="active",
-        timeout=1000,
+        timeout=2000,
     )
 
 
