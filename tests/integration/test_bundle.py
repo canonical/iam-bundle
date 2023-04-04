@@ -96,7 +96,11 @@ async def test_kratos_is_up(ops_test: OpsTest):
 
 
 async def test_multiple_kratos_external_idp_integrators(ops_test: OpsTest):
-    """Deploy an additional external idp integrator charm and test the action."""
+    """Deploy an additional external idp integrator charm and test the action.
+
+    The purpose of this test is to check that kratos allows for integration
+    with multiple IdPs.
+    """
     additional_idp_name = "generic-external-idp"
     config = {
         "client_id": "client_id",
@@ -130,11 +134,6 @@ async def test_multiple_kratos_external_idp_integrators(ops_test: OpsTest):
         .units[0]
         .run_action("get-redirect-uri")
     )
-    get_redirect_uri_action_output = await ops_test.model.get_action_output(
-        action_uuid=get_redirect_uri_action.entity_id,
-        wait=120,
-    )
 
-    redirect_uri = get_redirect_uri_action_output["redirect-uri"]
-    assert redirect_uri
-    logger.info(f"Redirect_uri: {redirect_uri}")
+    action_output = await get_redirect_uri_action.wait()
+    assert "redirect-uri" in action_output.results
