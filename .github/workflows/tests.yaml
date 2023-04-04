@@ -44,6 +44,10 @@ jobs:
         run: kubectl get all -A
         if: failure()
 
+      - name: Get endpoints
+        run: kubectl get ep -A
+        if: failure()
+
       - name: Describe deployments
         run: kubectl describe deployments -n testing
         if: failure()
