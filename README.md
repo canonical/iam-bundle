@@ -17,4 +17,9 @@ If you would like to deploy the bundle with a locally built charm, modify the fi
 ```
 
 ## Deploy a bundle
-To deploy the bundle, run `juju deploy ./bundle-edge.yaml --trust`
+To deploy the bundle, run `juju deploy ./bundle-edge.yaml --trust`.
+
+## Test the bundle
+Integration tests can be run with `tox`.
+
+In order to launch tests against an already deployed bundle, run `tox -e integration -- --model=your-model --keep-models --no-deploy`.

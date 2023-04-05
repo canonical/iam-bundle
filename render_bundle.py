@@ -21,6 +21,7 @@ def read_bundle_template(
     filename: Union[str, Path] = BUNDLE_TEMPLATE_PATH
 ) -> Tuple[str, Set[str]]:
     """Read the template file from disk.
+
     Returns:
         A 2-tuple of the contents and a list of the template variables.
     """
@@ -37,6 +38,7 @@ def read_bundle_template(
 
 def parse_args() -> Tuple[Path, Path, Dict[str, str]]:
     """Parse CLI args, dynamically adding the list of bundle template variables as parsed args.
+
     Returns:
         A 3-tuple of the template path, the rendered output path and a mapping of template vars.
     """

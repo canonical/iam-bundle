@@ -20,13 +20,12 @@ applications:
     channel: {{ channel|default('edge', true) }}
     scale: 1
     series: jammy
-# TODO: Uncomment when https://github.com/canonical/kratos-ui-operator is published
-#  identity-platform-login-ui:
-#    charm: identity-platform-login-ui
-#    channel: {{ channel|default('edge', true) }}
-#    scale: 1
-#    series: jammy
-#    trust: true
+  identity-platform-login-ui-operator:
+    charm: identity-platform-login-ui-operator
+    channel: {{ channel|default('edge', true) }}
+    scale: 1
+    series: jammy
+    trust: true
   postgresql-k8s:
     charm: postgresql-k8s
     channel: edge
@@ -39,7 +38,7 @@ applications:
     scale: 1
     {%- if testing %}
     options:
-      ca-common-name: test-domain
+      ca-common-name: demo.ca.local
       generate-self-signed-certificates: true
     {%- endif %}
   traefik-admin:
@@ -72,8 +71,7 @@ relations:
   - [hydra:public-ingress, traefik-public:ingress]
   - [kratos:admin-ingress, traefik-admin:ingress]
   - [kratos:public-ingress, traefik-public:ingress]
-# TODO: Uncomment when https://github.com/canonical/kratos-ui-operator is published
-#  - [identity-platform-login-ui:ingress, traefik-public:ingress]
+#  - [identity-platform-login-ui-operator:ingress, traefik-public:ingress]
   {% if testing -%}
 # TODO: Uncomment when oauth relation interface is available
 #  - [grafana:oauth, hydra:oauth]
