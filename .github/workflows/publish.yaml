@@ -6,7 +6,7 @@ on:
       - main
       - track/**
     paths:
-      - "./bundle.yaml.j2"
+      - "bundle.yaml.j2"
 
 jobs:
   publish-bundle-edge:
