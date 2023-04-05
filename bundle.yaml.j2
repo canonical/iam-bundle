@@ -71,7 +71,7 @@ relations:
   - [hydra:public-ingress, traefik-public:ingress]
   - [kratos:admin-ingress, traefik-admin:ingress]
   - [kratos:public-ingress, traefik-public:ingress]
-#  - [identity-platform-login-ui-operator:ingress, traefik-public:ingress]
+  - [identity-platform-login-ui-operator:ingress, traefik-public:ingress]
   {% if testing -%}
 # TODO: Uncomment when oauth relation interface is available
 #  - [grafana:oauth, hydra:oauth]
