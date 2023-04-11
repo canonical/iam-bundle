@@ -1,5 +1,5 @@
 pytest
 jinja2
 juju
-pytest-operator==0.22.0
+pytest-operator==0.26.0
 -r requirements.txt
