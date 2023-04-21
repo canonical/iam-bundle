@@ -28,7 +28,7 @@ applications:
     trust: true
   postgresql-k8s:
     charm: postgresql-k8s
-    channel: edge
+    channel: 14/stable
     series: jammy
     scale: 1
     trust: true
@@ -54,7 +54,7 @@ applications:
     scale: 1
     trust: true
   {%- if testing %}
-# TODO: Uncomment when oauth relation interface is available
+# TODO: Uncomment when grafana is integrated with oauth
 #  grafana-k8s:
 #    charm: grafana-k8s
 #    channel: edge
@@ -72,8 +72,12 @@ relations:
   - [kratos:admin-ingress, traefik-admin:ingress]
   - [kratos:public-ingress, traefik-public:ingress]
   - [identity-platform-login-ui-operator:ingress, traefik-public:ingress]
+  - [identity-platform-login-ui-operator:endpoint-info, hydra:endpoint-info]
+  - [identity-platform-login-ui-operator:ui-endpoint-info, hydra:ui-endpoint-info]
+  - [identity-platform-login-ui-operator:ui-endpoint-info, kratos:ui-endpoint-info]
+  - [identity-platform-login-ui-operator:kratos-endpoint-info, kratos:kratos-endpoint-info]
   {% if testing -%}
-# TODO: Uncomment when oauth relation interface is available
+# TODO: Uncomment when grafana is integrated with oauth
 #  - [grafana:oauth, hydra:oauth]
   {% endif -%}
   - [traefik-admin:certificates, tls-certificates-operator:certificates]
