@@ -5,16 +5,26 @@
 import inspect
 import logging
 import os
+from os.path import join
 from pathlib import Path
+from urllib.parse import parse_qs, urlparse
 
 import pytest
 import requests
+from lightkube import Client
+from playwright.async_api import async_playwright, expect
 from pytest_operator.plugin import OpsTest
+
+from tests.integration.auth_utils import construct_authorization_url, token_request
+from tests.integration.conftest import apply_dex_resources
 
 logger = logging.getLogger(__name__)
 
 TRAEFIK_ADMIN_APP = "traefik-admin"
 TRAEFIK_PUBLIC_APP = "traefik-public"
+CLIENT_REDIRECT_URIS = ["https://example.com"]
+DEX_CLIENT_ID = "client_id"
+DEX_CLIENT_SECRET = "client_secret"
 
 
 def get_this_script_dir() -> Path:
@@ -23,15 +33,37 @@ def get_this_script_dir() -> Path:
     return Path(path)
 
 
+class State:
+    """holding (incremental) test state"""
+
+
+@pytest.fixture(scope="module")
+def state() -> State:
+    return State
+
+
 async def get_unit_address(ops_test: OpsTest, app_name: str, unit_num: int) -> str:
     """Get private address of a unit."""
     status = await ops_test.model.get_status()  # noqa: F821
     return status["applications"][app_name]["units"][f"{app_name}/{unit_num}"]["address"]
 
 
+async def get_app_address(ops_test: OpsTest, app_name: str) -> str:
+    """Get address of an app."""
+    status = await ops_test.model.get_status()  # noqa: F821
+    return status["applications"][app_name]["public-address"]
+
+
+async def get_reverse_proxy_app_url(
+    ops_test: OpsTest, ingress_app_name: str, app_name: str
+) -> str:
+    address = await get_app_address(ops_test, ingress_app_name)
+    return f"https://{address}/{ops_test.model.name}-{app_name}/"
+
+
 @pytest.mark.skip_if_deployed
 @pytest.mark.abort_on_fail
-async def test_render_and_deploy_bundle(ops_test: OpsTest):
+async def test_render_and_deploy_bundle(ops_test: OpsTest, dex: None):
     """Render the bundle from template and deploy using ops_test."""
     await ops_test.model.set_config({"logging-config": "<root>=WARNING; unit=DEBUG"})
 
@@ -52,10 +84,11 @@ async def test_render_and_deploy_bundle(ops_test: OpsTest):
 
     await ops_test.model.applications["kratos-external-idp-integrator"].set_config(
         {
-            "client_id": os.environ["KRATOS_EXTERNAL_IDP_CLIENT_ID"],
-            "microsoft_tenant_id": os.environ["KRATOS_EXTERNAL_IDP_TENANT_ID"],
-            "client_secret": os.environ["KRATOS_EXTERNAL_IDP_CLIENT_SECRET"],
-            "provider": "microsoft",
+            "client_id": DEX_CLIENT_ID,
+            "client_secret": DEX_CLIENT_SECRET,
+            "provider": "generic",
+            "issuer_url": dex,
+            "scope": "profile email",
         }
     )
 
@@ -71,12 +104,12 @@ async def test_render_and_deploy_bundle(ops_test: OpsTest):
 async def test_hydra_is_up(ops_test: OpsTest):
     """Check that hydra and its environment dependencies (e.g. the database) are responsive."""
     app_name = "hydra"
-    admin_address = await get_unit_address(ops_test, TRAEFIK_ADMIN_APP, 0)
+    admin_address = await get_app_address(ops_test, TRAEFIK_ADMIN_APP)
 
-    health_check_url = f"http://{admin_address}/{ops_test.model.name}-{app_name}/health/ready"
+    health_check_url = f"https://{admin_address}/{ops_test.model.name}-{app_name}/health/ready"
     logger.info(f"Hydra admin health check address: {health_check_url}")
 
-    resp = requests.get(health_check_url)
+    resp = requests.get(health_check_url, verify=False)
     assert resp.status_code == 200
 
 
@@ -84,29 +117,54 @@ async def test_hydra_is_up(ops_test: OpsTest):
 async def test_kratos_is_up(ops_test: OpsTest):
     """Check that kratos and its environment dependencies (e.g. the database) are responsive."""
     app_name = "kratos"
-    admin_address = await get_unit_address(ops_test, TRAEFIK_ADMIN_APP, 0)
+    admin_address = await get_app_address(ops_test, TRAEFIK_ADMIN_APP)
 
     health_check_url = (
-        f"http://{admin_address}/{ops_test.model.name}-{app_name}/admin/health/ready"
+        f"https://{admin_address}/{ops_test.model.name}-{app_name}/admin/health/ready"
     )
     logger.info(f"Kratos admin health check address: {health_check_url}")
 
-    resp = requests.get(health_check_url)
+    resp = requests.get(health_check_url, verify=False)
     assert resp.status_code == 200
 
 
-async def test_multiple_kratos_external_idp_integrators(ops_test: OpsTest):
+@pytest.mark.abort_on_fail
+async def test_kratos_external_idp_redirect_url(ops_test: OpsTest, client: Client):
+    get_redirect_uri_action = (
+        await ops_test.model.applications["kratos-external-idp-integrator"]
+        .units[0]
+        .run_action("get-redirect-uri")
+    )
+
+    action_output = await get_redirect_uri_action.wait()
+    assert "redirect-uri" in action_output.results
+
+    apply_dex_resources(
+        client,
+        client_id=DEX_CLIENT_ID,
+        client_secret=DEX_CLIENT_SECRET,
+        redirect_uri=action_output.results["redirect-uri"],
+    )
+
+
+@pytest.mark.skip_if_deployed
+async def test_multiple_kratos_external_idp_integrators(
+    ops_test: OpsTest, client: Client, dex: None
+):
     """Deploy an additional external idp integrator charm and test the action.
 
     The purpose of this test is to check that kratos allows for integration
     with multiple IdPs.
     """
     additional_idp_name = "generic-external-idp"
+
     config = {
-        "client_id": "client_id",
-        "client_secret": "client_secret",
+        "client_id": "id",
+        "client_secret": "a12345",
         "provider": "generic",
-        "issuer_url": "http://example.com",
+        "issuer_url": dex,
+        "scope": "profile email",
+        "provider_id": "Other",
     }
 
     await ops_test.model.deploy(
@@ -137,3 +195,121 @@ async def test_multiple_kratos_external_idp_integrators(ops_test: OpsTest):
 
     action_output = await get_redirect_uri_action.wait()
     assert "redirect-uri" in action_output.results
+
+
+# async def test_kratos_scale_up(ops_test: OpsTest):
+#     """Check that kratos works after it is scaled up."""
+#     app_name = "kratos"
+
+#     app = ops_test.model.applications[app_name]
+
+#     await app.scale(3)
+
+#     await ops_test.model.wait_for_idle(
+#         raise_on_blocked=False,
+#         raise_on_error=False,
+#         status="active",
+#         timeout=2000,
+#     )
+
+#     admin_address = await get_app_address(ops_test, TRAEFIK_ADMIN_APP)
+#     health_check_url = (
+#         f"https://{admin_address}/{ops_test.model.name}-{app_name}/admin/health/ready"
+#     )
+#     resp = requests.get(health_check_url, verify=False)
+
+#     assert resp.status_code == 200
+
+
+# async def test_hydra_scale_up(ops_test: OpsTest):
+#     """Check that hydra works after it is scaled up."""
+#     app_name = "hydra"
+
+#     app = ops_test.model.applications[app_name]
+
+#     await app.scale(3)
+
+#     await ops_test.model.wait_for_idle(
+#         raise_on_blocked=False,
+#         raise_on_error=False,
+#         status="active",
+#         timeout=2000,
+#     )
+
+#     admin_address = await get_app_address(ops_test, TRAEFIK_ADMIN_APP)
+#     health_check_url = f"https://{admin_address}/{ops_test.model.name}-{app_name}/admin/health/ready"
+#     resp = requests.get(health_check_url, verify=False)
+
+#     assert resp.status_code == 200
+
+
+async def test_create_hydra_client(ops_test: OpsTest, state: State) -> None:
+    """Register a client on hydra."""
+
+    app = ops_test.model.applications["hydra"]
+    action = await app.units[0].run_action(
+        "create-oauth-client",
+        **{
+            "redirect-uris": CLIENT_REDIRECT_URIS,
+        },
+    )
+
+    res = (await action.wait()).results
+
+    assert res["client-id"]
+    assert res["client-secret"]
+    assert res["redirect-uris"] == "https://example.com"
+
+    state.client_id = res["client-id"]
+    state.client_secret = res["client-secret"]
+    state.redirect_uri = res["redirect-uris"]
+
+
+async def test_hydra_authorization_url(
+    ops_test: OpsTest, state: State, dex: str, dex_user_email: str, dex_user_password: str
+) -> None:
+    hydra_url = await get_reverse_proxy_app_url(ops_test, TRAEFIK_PUBLIC_APP, "hydra")
+
+    async with async_playwright() as p:
+        browser = await p.chromium.launch()
+        context = await browser.new_context(ignore_https_errors=True)
+
+        page = await context.new_page()
+        # Go to hydra authorization endpoint
+        await page.goto(
+            construct_authorization_url(hydra_url, state.client_id, state.redirect_uri)
+        )
+
+        expected_url = join(
+            await get_reverse_proxy_app_url(
+                ops_test, TRAEFIK_PUBLIC_APP, "identity-platform-login-ui-operator"
+            ),
+            "login",
+        )
+        assert page.url.startswith(expected_url + "?")
+
+        # Choose provider
+        async with page.expect_navigation():
+            await page.get_by_role("button", name="Generic").click()
+
+        assert page.url.startswith(dex)
+
+        # Login
+        await page.get_by_placeholder("email address").click()
+        await page.get_by_placeholder("email address").fill(dex_user_email)
+        await page.get_by_placeholder("password").click()
+        await page.get_by_placeholder("password").fill(dex_user_password)
+        await page.get_by_role("button", name="Login").click()
+
+        await page.wait_for_url(state.redirect_uri + "?*")
+        parsed = urlparse(page.url)
+        q = parse_qs(parsed.query)
+
+        assert "code" in q
+
+        resp = token_request(
+            hydra_url, state.client_id, state.client_secret, q["code"], state.redirect_uri
+        )
+
+        assert "id_token" in resp.json()
+        assert "access_token" in resp.json()
