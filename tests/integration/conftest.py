@@ -4,98 +4,25 @@
 
 import logging
 import os
-from os.path import join
-from pathlib import Path
-from time import sleep
-from typing import Generator, Optional
+from typing import Any, Callable, Dict, Generator
 
 import pytest
-import requests
-from lightkube import Client, KubeConfig, codecs
-from lightkube.core.exceptions import ApiError, ObjectDeleted
+from dex import apply_dex_resources, get_dex_manifest, get_dex_service_ip
+from lightkube import Client, KubeConfig
+from lightkube.core.exceptions import ApiError
 from lightkube.resources.apps_v1 import Deployment
-from lightkube.resources.core_v1 import Pod, Service
 from playwright.async_api import async_playwright
+from playwright.async_api._generated import Browser, BrowserContext, BrowserType, Page
+from playwright.async_api._generated import Playwright as AsyncPlaywright
 from pytest_operator.plugin import OpsTest
-from requests.exceptions import RequestException
 
 logger = logging.getLogger(__name__)
 KUBECONFIG = os.environ.get("TESTING_KUBECONFIG", "~/.kube/config")
-DEX_MANIFESTS = Path(__file__).parent.parent.parent / "manifests" / "dex.yaml"
 
 
 @pytest.fixture(scope="session")
 def client() -> Client:
     return Client(config=KubeConfig.from_file(KUBECONFIG), field_manager="dex-test")
-
-
-def get_dex_manifest(**context):
-    with open(DEX_MANIFESTS, "r") as file:
-        return codecs.load_all_yaml(file, context=context)
-
-
-def dex_is_ready(issuer_url=None):
-    if not issuer_url:
-        issuer_url = get_dex_service_ip(client)
-
-    resp = requests.get(join(issuer_url, ".well-known/openid-configuration"))
-    if resp.status_code != 200:
-        raise RuntimeError("Failed to deploy dex")
-
-
-def apply_dex_resources(
-    client: Client,
-    client_id: str = "client_id",
-    client_secret: str = "client_secret",
-    redirect_uri: str = "",
-    issuer_url: Optional[str] = None,
-    restart: Optional[bool] = True,
-    wait_for_ready: Optional[bool] = True,
-) -> None:
-    # Get the dex IP
-    if not issuer_url:
-        try:
-            issuer_url = get_dex_service_ip(client)
-        except ApiError:
-            logger.info("No service found for dex")
-
-    objs = get_dex_manifest(
-        client_id=client_id,
-        client_secret=client_secret,
-        redirect_uri=redirect_uri,
-        issuer_url=issuer_url,
-    )
-
-    for obj in objs:
-        client.apply(obj, force=True)
-
-    if restart:
-        logger.info("Restarting dex")
-        for pod in client.list(Pod, namespace="dex", labels={"app": "dex"}):
-            client.delete(Pod, pod.metadata.name, namespace="dex")
-
-    if wait_for_ready:
-        logger.info("Waiting for dex to be ready")
-        for pod in client.list(Pod, namespace="dex", labels={"app": "dex"}):
-            # Some pods may be deleted, if we are restarting
-            try:
-                client.wait(
-                    Pod, pod.metadata.name, for_conditions=["Ready", "Deleted"], namespace="dex"
-                )
-            except ObjectDeleted:
-                pass
-            client.wait(Deployment, "dex", namespace="dex", for_conditions=["Available"])
-
-            try:
-                dex_is_ready(issuer_url)
-            except (RuntimeError, RequestException):
-                sleep(3)
-                dex_is_ready(issuer_url)
-
-
-def get_dex_service_ip(client: Client):
-    service = client.get(Service, "dex", namespace="dex")
-    return f"http://{service.status.loadBalancer.ingress[0].ip}:5556/"
 
 
 @pytest.fixture(scope="module")
@@ -132,3 +59,82 @@ def dex_user_email() -> str:
 @pytest.fixture()
 def dex_user_password() -> str:
     return "password"
+
+
+# The playwright fixtures are taken from:
+# https://github.com/microsoft/playwright-python/blob/main/tests/async/conftest.py
+@pytest.fixture(scope="module")
+def launch_arguments(pytestconfig: Any) -> Dict:
+    return {
+        "headless": not (pytestconfig.getoption("--headed") or os.getenv("HEADFUL", False)),
+        "channel": pytestconfig.getoption("--browser-channel"),
+    }
+
+
+@pytest.fixture(scope="module")
+async def playwright() -> Generator[AsyncPlaywright, None, None]:
+    async with async_playwright() as playwright_object:
+        yield playwright_object
+
+
+@pytest.fixture(scope="module")
+def browser_type(playwright: AsyncPlaywright, browser_name: str) -> BrowserType:
+    if browser_name == "chromium":
+        return playwright.chromium
+    if browser_name == "firefox":
+        return playwright.firefox
+    if browser_name == "webkit":
+        return playwright.webkit
+
+
+@pytest.fixture(scope="module")
+async def browser_factory(
+    launch_arguments: Dict, browser_type: BrowserType
+) -> Generator[Browser, None, None]:
+    browsers = []
+
+    async def launch(**kwargs):
+        browser = await browser_type.launch(**launch_arguments, **kwargs)
+        browsers.append(browser)
+        return browser
+
+    yield launch
+    for browser in browsers:
+        await browser.close()
+
+
+@pytest.fixture(scope="module")
+async def browser(browser_factory: Browser) -> Generator[Browser, None, None]:
+    browser = await browser_factory()
+    yield browser
+    await browser.close()
+
+
+@pytest.fixture
+async def context_factory(
+    browser: Browser,
+) -> Generator[Callable[..., BrowserContext], None, None]:
+    contexts = []
+
+    async def launch(**kwargs):
+        context = await browser.new_context(**kwargs)
+        contexts.append(context)
+        return context
+
+    yield launch
+    for context in contexts:
+        await context.close()
+
+
+@pytest.fixture
+async def context(context_factory: Callable[..., BrowserContext]) -> BrowserContext:
+    context = await context_factory(ignore_https_errors=True)
+    yield context
+    await context.close()
+
+
+@pytest.fixture
+async def page(context: BrowserContext) -> Page:
+    page = await context.new_page()
+    yield page
+    await page.close()

@@ -12,10 +12,14 @@ from urllib.parse import parse_qs, urlparse
 import pytest
 import requests
 from lightkube import Client
-from playwright.async_api import async_playwright, expect
+from playwright.async_api._generated import Page
 from pytest_operator.plugin import OpsTest
 
-from tests.integration.auth_utils import construct_authorization_url, token_request
+from tests.integration.auth_utils import (
+    auth_code_grant_request,
+    client_credentials_grant_request,
+    construct_authorization_url,
+)
 from tests.integration.conftest import apply_dex_resources
 
 logger = logging.getLogger(__name__)
@@ -34,7 +38,11 @@ def get_this_script_dir() -> Path:
 
 
 class State:
-    """holding (incremental) test state"""
+    """Object used to hold the (incremental) test state."""
+
+    client_id: str
+    client_secret: str
+    redirect_uri: str
 
 
 @pytest.fixture(scope="module")
@@ -237,7 +245,7 @@ async def test_multiple_kratos_external_idp_integrators(
 #     )
 
 #     admin_address = await get_app_address(ops_test, TRAEFIK_ADMIN_APP)
-#     health_check_url = f"https://{admin_address}/{ops_test.model.name}-{app_name}/admin/health/ready"
+#     health_check_url = f"https://{admin_address}/{ops_test.model.name}-{app_name}/health/ready"
 #     resp = requests.get(health_check_url, verify=False)
 
 #     assert resp.status_code == 200
@@ -245,12 +253,12 @@ async def test_multiple_kratos_external_idp_integrators(
 
 async def test_create_hydra_client(ops_test: OpsTest, state: State) -> None:
     """Register a client on hydra."""
-
     app = ops_test.model.applications["hydra"]
     action = await app.units[0].run_action(
         "create-oauth-client",
         **{
             "redirect-uris": CLIENT_REDIRECT_URIS,
+            "grant-types": ["authorization_code", "client_credentials"],
         },
     )
 
@@ -265,51 +273,60 @@ async def test_create_hydra_client(ops_test: OpsTest, state: State) -> None:
     state.redirect_uri = res["redirect-uris"]
 
 
-async def test_hydra_authorization_url(
-    ops_test: OpsTest, state: State, dex: str, dex_user_email: str, dex_user_password: str
+async def test_authorization_code_flow(
+    ops_test: OpsTest,
+    state: State,
+    dex: str,
+    dex_user_email: str,
+    dex_user_password: str,
+    page: Page,
 ) -> None:
     hydra_url = await get_reverse_proxy_app_url(ops_test, TRAEFIK_PUBLIC_APP, "hydra")
 
-    async with async_playwright() as p:
-        browser = await p.chromium.launch()
-        context = await browser.new_context(ignore_https_errors=True)
+    # Go to hydra authorization endpoint
+    await page.goto(construct_authorization_url(hydra_url, state.client_id, state.redirect_uri))
 
-        page = await context.new_page()
-        # Go to hydra authorization endpoint
-        await page.goto(
-            construct_authorization_url(hydra_url, state.client_id, state.redirect_uri)
-        )
+    expected_url = join(
+        await get_reverse_proxy_app_url(
+            ops_test, TRAEFIK_PUBLIC_APP, "identity-platform-login-ui-operator"
+        ),
+        "login",
+    )
+    assert page.url.startswith(expected_url + "?")
 
-        expected_url = join(
-            await get_reverse_proxy_app_url(
-                ops_test, TRAEFIK_PUBLIC_APP, "identity-platform-login-ui-operator"
-            ),
-            "login",
-        )
-        assert page.url.startswith(expected_url + "?")
+    # Choose provider
+    async with page.expect_navigation():
+        await page.get_by_role("button", name="Generic").click()
 
-        # Choose provider
-        async with page.expect_navigation():
-            await page.get_by_role("button", name="Generic").click()
+    assert page.url.startswith(dex)
 
-        assert page.url.startswith(dex)
+    # Login
+    await page.get_by_placeholder("email address").click()
+    await page.get_by_placeholder("email address").fill(dex_user_email)
+    await page.get_by_placeholder("password").click()
+    await page.get_by_placeholder("password").fill(dex_user_password)
+    await page.get_by_role("button", name="Login").click()
 
-        # Login
-        await page.get_by_placeholder("email address").click()
-        await page.get_by_placeholder("email address").fill(dex_user_email)
-        await page.get_by_placeholder("password").click()
-        await page.get_by_placeholder("password").fill(dex_user_password)
-        await page.get_by_role("button", name="Login").click()
+    await page.wait_for_url(state.redirect_uri + "?*")
+    parsed = urlparse(page.url)
+    q = parse_qs(parsed.query)
 
-        await page.wait_for_url(state.redirect_uri + "?*")
-        parsed = urlparse(page.url)
-        q = parse_qs(parsed.query)
+    assert "code" in q
 
-        assert "code" in q
+    resp = auth_code_grant_request(
+        hydra_url, state.client_id, state.client_secret, q["code"], state.redirect_uri
+    )
 
-        resp = token_request(
-            hydra_url, state.client_id, state.client_secret, q["code"], state.redirect_uri
-        )
+    assert "id_token" in resp.json()
+    assert "access_token" in resp.json()
 
-        assert "id_token" in resp.json()
-        assert "access_token" in resp.json()
+
+async def test_client_credentials_flow(
+    ops_test: OpsTest,
+    state: State,
+) -> None:
+    hydra_url = await get_reverse_proxy_app_url(ops_test, TRAEFIK_PUBLIC_APP, "hydra")
+
+    resp = client_credentials_grant_request(hydra_url, state.client_id, state.client_secret)
+
+    assert "access_token" in resp.json()
