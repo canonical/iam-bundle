@@ -26,7 +26,6 @@ logger = logging.getLogger(__name__)
 
 TRAEFIK_ADMIN_APP = "traefik-admin"
 TRAEFIK_PUBLIC_APP = "traefik-public"
-CLIENT_REDIRECT_URIS = ["https://example.com"]
 DEX_CLIENT_ID = "client_id"
 DEX_CLIENT_SECRET = "client_secret"
 
@@ -251,13 +250,17 @@ async def test_multiple_kratos_external_idp_integrators(
 #     assert resp.status_code == 200
 
 
-async def test_create_hydra_client(ops_test: OpsTest, state: State) -> None:
+async def test_create_hydra_client(ops_test: OpsTest, state: State, dex: str) -> None:
     """Register a client on hydra."""
+    # This is a hack, we just need a server to be running on the redirect_uri
+    # so that when we get redirected there we don't get an connection_refused
+    # error.
+    redirect_uri = join(dex, "some", "path")
     app = ops_test.model.applications["hydra"]
     action = await app.units[0].run_action(
         "create-oauth-client",
         **{
-            "redirect-uris": CLIENT_REDIRECT_URIS,
+            "redirect-uris": [redirect_uri],
             "grant-types": ["authorization_code", "client_credentials"],
         },
     )
@@ -266,7 +269,7 @@ async def test_create_hydra_client(ops_test: OpsTest, state: State) -> None:
 
     assert res["client-id"]
     assert res["client-secret"]
-    assert res["redirect-uris"] == "https://example.com"
+    assert res["redirect-uris"] == redirect_uri
 
     state.client_id = res["client-id"]
     state.client_secret = res["client-secret"]
@@ -308,6 +311,7 @@ async def test_authorization_code_flow(
     await page.get_by_role("button", name="Login").click()
 
     await page.wait_for_url(state.redirect_uri + "?*")
+
     parsed = urlparse(page.url)
     q = parse_qs(parsed.query)
 
