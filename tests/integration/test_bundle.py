@@ -204,50 +204,50 @@ async def test_multiple_kratos_external_idp_integrators(
     assert "redirect-uri" in action_output.results
 
 
-# async def test_kratos_scale_up(ops_test: OpsTest):
-#     """Check that kratos works after it is scaled up."""
-#     app_name = "kratos"
+async def test_kratos_scale_up(ops_test: OpsTest):
+    """Check that kratos works after it is scaled up."""
+    app_name = "kratos"
 
-#     app = ops_test.model.applications[app_name]
+    app = ops_test.model.applications[app_name]
 
-#     await app.scale(3)
+    await app.scale(3)
 
-#     await ops_test.model.wait_for_idle(
-#         raise_on_blocked=False,
-#         raise_on_error=False,
-#         status="active",
-#         timeout=2000,
-#     )
+    await ops_test.model.wait_for_idle(
+        raise_on_blocked=False,
+        raise_on_error=False,
+        status="active",
+        timeout=2000,
+    )
 
-#     admin_address = await get_app_address(ops_test, TRAEFIK_ADMIN_APP)
-#     health_check_url = (
-#         f"https://{admin_address}/{ops_test.model.name}-{app_name}/admin/health/ready"
-#     )
-#     resp = requests.get(health_check_url, verify=False)
+    admin_address = await get_app_address(ops_test, TRAEFIK_ADMIN_APP)
+    health_check_url = (
+        f"https://{admin_address}/{ops_test.model.name}-{app_name}/admin/health/ready"
+    )
+    resp = requests.get(health_check_url, verify=False)
 
-#     assert resp.status_code == 200
+    assert resp.status_code == 200
 
 
-# async def test_hydra_scale_up(ops_test: OpsTest):
-#     """Check that hydra works after it is scaled up."""
-#     app_name = "hydra"
+async def test_hydra_scale_up(ops_test: OpsTest):
+    """Check that hydra works after it is scaled up."""
+    app_name = "hydra"
 
-#     app = ops_test.model.applications[app_name]
+    app = ops_test.model.applications[app_name]
 
-#     await app.scale(3)
+    await app.scale(3)
 
-#     await ops_test.model.wait_for_idle(
-#         raise_on_blocked=False,
-#         raise_on_error=False,
-#         status="active",
-#         timeout=2000,
-#     )
+    await ops_test.model.wait_for_idle(
+        raise_on_blocked=False,
+        raise_on_error=False,
+        status="active",
+        timeout=2000,
+    )
 
-#     admin_address = await get_app_address(ops_test, TRAEFIK_ADMIN_APP)
-#     health_check_url = f"https://{admin_address}/{ops_test.model.name}-{app_name}/health/ready"
-#     resp = requests.get(health_check_url, verify=False)
+    admin_address = await get_app_address(ops_test, TRAEFIK_ADMIN_APP)
+    health_check_url = f"https://{admin_address}/{ops_test.model.name}-{app_name}/health/ready"
+    resp = requests.get(health_check_url, verify=False)
 
-#     assert resp.status_code == 200
+    assert resp.status_code == 200
 
 
 async def test_create_hydra_client(ops_test: OpsTest, state: State, dex: str) -> None:
