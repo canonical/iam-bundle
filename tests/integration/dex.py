@@ -6,7 +6,7 @@ import logging
 from os.path import join
 from pathlib import Path
 from time import sleep
-from typing import Optional
+from typing import List, Optional
 
 import requests
 from lightkube import Client, codecs
@@ -21,12 +21,25 @@ logger = logging.getLogger(__name__)
 DEX_MANIFESTS = Path(__file__).parent.parent.parent / "manifests" / "dex.yaml"
 
 
-def get_dex_manifest(**context):
+def get_dex_manifest(
+    client_id: Optional[str] = None,
+    client_secret: Optional[str] = None,
+    redirect_uri: Optional[str] = None,
+    issuer_url: Optional[str] = None,
+) -> List[codecs.AnyResource]:
     with open(DEX_MANIFESTS, "r") as file:
-        return codecs.load_all_yaml(file, context=context)
+        return codecs.load_all_yaml(
+            file,
+            context={
+                "client_id": client_id,
+                "client_secret": client_secret,
+                "redirect_uri": redirect_uri,
+                "issuer_url": issuer_url,
+            },
+        )
 
 
-def dex_is_ready(client, issuer_url=None):
+def dex_is_ready(client: Client, issuer_url: Optional[str] = None) -> None:
     for pod in client.list(Pod, namespace="dex", labels={"app": "dex"}):
         # Some pods may be deleted, if we are restarting
         try:
@@ -84,6 +97,6 @@ def apply_dex_resources(
             dex_is_ready(client, issuer_url)
 
 
-def get_dex_service_ip(client: Client):
+def get_dex_service_ip(client: Client) -> str:
     service = client.get(Service, "dex", namespace="dex")
     return f"http://{service.status.loadBalancer.ingress[0].ip}:5556/"

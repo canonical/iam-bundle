@@ -15,12 +15,13 @@ from lightkube import Client
 from playwright.async_api._generated import Page
 from pytest_operator.plugin import OpsTest
 
-from tests.integration.auth_utils import (
+from integration.auth_utils import (
     auth_code_grant_request,
     client_credentials_grant_request,
     construct_authorization_url,
+    userinfo_request,
 )
-from tests.integration.conftest import apply_dex_resources
+from integration.conftest import apply_dex_resources
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +47,7 @@ class State:
 
 @pytest.fixture(scope="module")
 def state() -> State:
-    return State
+    return State()
 
 
 async def get_unit_address(ops_test: OpsTest, app_name: str, unit_num: int) -> str:
@@ -70,7 +71,7 @@ async def get_reverse_proxy_app_url(
 
 @pytest.mark.skip_if_deployed
 @pytest.mark.abort_on_fail
-async def test_render_and_deploy_bundle(ops_test: OpsTest, dex: None):
+async def test_render_and_deploy_bundle(ops_test: OpsTest, dex: None) -> None:
     """Render the bundle from template and deploy using ops_test."""
     await ops_test.model.set_config({"logging-config": "<root>=WARNING; unit=DEBUG"})
 
@@ -108,7 +109,7 @@ async def test_render_and_deploy_bundle(ops_test: OpsTest, dex: None):
 
 
 @pytest.mark.abort_on_fail
-async def test_hydra_is_up(ops_test: OpsTest):
+async def test_hydra_is_up(ops_test: OpsTest) -> None:
     """Check that hydra and its environment dependencies (e.g. the database) are responsive."""
     app_name = "hydra"
     admin_address = await get_app_address(ops_test, TRAEFIK_ADMIN_APP)
@@ -121,7 +122,7 @@ async def test_hydra_is_up(ops_test: OpsTest):
 
 
 @pytest.mark.abort_on_fail
-async def test_kratos_is_up(ops_test: OpsTest):
+async def test_kratos_is_up(ops_test: OpsTest) -> None:
     """Check that kratos and its environment dependencies (e.g. the database) are responsive."""
     app_name = "kratos"
     admin_address = await get_app_address(ops_test, TRAEFIK_ADMIN_APP)
@@ -136,7 +137,7 @@ async def test_kratos_is_up(ops_test: OpsTest):
 
 
 @pytest.mark.abort_on_fail
-async def test_kratos_external_idp_redirect_url(ops_test: OpsTest, client: Client):
+async def test_kratos_external_idp_redirect_url(ops_test: OpsTest, client: Client) -> None:
     get_redirect_uri_action = (
         await ops_test.model.applications["kratos-external-idp-integrator"]
         .units[0]
@@ -157,7 +158,7 @@ async def test_kratos_external_idp_redirect_url(ops_test: OpsTest, client: Clien
 @pytest.mark.skip_if_deployed
 async def test_multiple_kratos_external_idp_integrators(
     ops_test: OpsTest, client: Client, dex: None
-):
+) -> None:
     """Deploy an additional external idp integrator charm and test the action.
 
     The purpose of this test is to check that kratos allows for integration
@@ -317,9 +318,11 @@ async def test_authorization_code_flow(
 
     assert "code" in q
 
+    # Exchange code for tokens
     resp = auth_code_grant_request(
-        hydra_url, state.client_id, state.client_secret, q["code"], state.redirect_uri
+        hydra_url, state.client_id, state.client_secret, q["code"][0], state.redirect_uri
     )
+    json_resp = resp.json()
 
     assert "id_token" in resp.json()
     assert "access_token" in resp.json()

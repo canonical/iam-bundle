@@ -4,10 +4,9 @@
 
 import logging
 import os
-from typing import Any, Callable, Dict, Generator
+from typing import Any, AsyncGenerator, Callable, Coroutine, Dict, Generator
 
 import pytest
-from dex import apply_dex_resources, get_dex_manifest, get_dex_service_ip
 from lightkube import Client, KubeConfig
 from lightkube.core.exceptions import ApiError
 from lightkube.resources.apps_v1 import Deployment
@@ -15,6 +14,8 @@ from playwright.async_api import async_playwright
 from playwright.async_api._generated import Browser, BrowserContext, BrowserType, Page
 from playwright.async_api._generated import Playwright as AsyncPlaywright
 from pytest_operator.plugin import OpsTest
+
+from integration.dex import apply_dex_resources, get_dex_manifest, get_dex_service_ip
 
 logger = logging.getLogger(__name__)
 KUBECONFIG = os.environ.get("TESTING_KUBECONFIG", "~/.kube/config")
@@ -72,7 +73,7 @@ def launch_arguments(pytestconfig: Any) -> Dict:
 
 
 @pytest.fixture(scope="module")
-async def playwright() -> Generator[AsyncPlaywright, None, None]:
+async def playwright() -> AsyncGenerator[AsyncPlaywright, None]:
     async with async_playwright() as playwright_object:
         yield playwright_object
 
@@ -81,19 +82,21 @@ async def playwright() -> Generator[AsyncPlaywright, None, None]:
 def browser_type(playwright: AsyncPlaywright, browser_name: str) -> BrowserType:
     if browser_name == "chromium":
         return playwright.chromium
-    if browser_name == "firefox":
+    elif browser_name == "firefox":
         return playwright.firefox
-    if browser_name == "webkit":
+    elif browser_name == "webkit":
         return playwright.webkit
+    else:
+        return playwright.chromium
 
 
 @pytest.fixture(scope="module")
 async def browser_factory(
     launch_arguments: Dict, browser_type: BrowserType
-) -> Generator[Browser, None, None]:
+) -> AsyncGenerator[Callable[..., Coroutine[Any, Any, Browser]], None]:
     browsers = []
 
-    async def launch(**kwargs):
+    async def launch(**kwargs: Any) -> Browser:
         browser = await browser_type.launch(**launch_arguments, **kwargs)
         browsers.append(browser)
         return browser
@@ -104,7 +107,9 @@ async def browser_factory(
 
 
 @pytest.fixture(scope="module")
-async def browser(browser_factory: Browser) -> Generator[Browser, None, None]:
+async def browser(
+    browser_factory: Callable[..., Coroutine[Any, Any, Browser]]
+) -> AsyncGenerator[Browser, None]:
     browser = await browser_factory()
     yield browser
     await browser.close()
@@ -113,10 +118,10 @@ async def browser(browser_factory: Browser) -> Generator[Browser, None, None]:
 @pytest.fixture
 async def context_factory(
     browser: Browser,
-) -> Generator[Callable[..., BrowserContext], None, None]:
+) -> AsyncGenerator[Callable[..., Coroutine[Any, Any, BrowserContext]], None]:
     contexts = []
 
-    async def launch(**kwargs):
+    async def launch(**kwargs: Any) -> BrowserContext:
         context = await browser.new_context(**kwargs)
         contexts.append(context)
         return context
@@ -127,14 +132,16 @@ async def context_factory(
 
 
 @pytest.fixture
-async def context(context_factory: Callable[..., BrowserContext]) -> BrowserContext:
+async def context(
+    context_factory: Callable[..., Coroutine[Any, Any, BrowserContext]]
+) -> AsyncGenerator[BrowserContext, None]:
     context = await context_factory(ignore_https_errors=True)
     yield context
     await context.close()
 
 
 @pytest.fixture
-async def page(context: BrowserContext) -> Page:
+async def page(context: BrowserContext) -> AsyncGenerator[Page, None]:
     page = await context.new_page()
     yield page
     await page.close()

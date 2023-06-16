@@ -10,7 +10,7 @@ from urllib.parse import urlencode
 import requests
 
 
-def construct_authorization_url(hydra_url, client_id, client_secret):
+def construct_authorization_url(hydra_url: str, client_id: str, client_secret: str) -> str:
     params = {
         "client_id": client_id,
         "redirect_uri": client_secret,
@@ -23,12 +23,14 @@ def construct_authorization_url(hydra_url, client_id, client_secret):
     return join(hydra_url, "oauth2/auth?" + urlencode(params))
 
 
-def get_basic_http_auth_header(username, password):
+def get_basic_http_auth_header(username: str, password: str) -> str:
     token = b64encode(f"{username}:{password}".encode("utf-8")).decode("ascii")
     return f"Basic {token}"
 
 
-def client_credentials_grant_request(hydra_url, client_id, client_secret, scope="openid profile"):
+def client_credentials_grant_request(
+    hydra_url: str, client_id: str, client_secret: str, scope: str = "openid profile"
+) -> requests.Response:
     url = join(hydra_url, "oauth2/token")
     body = {
         "grant_type": "client_credentials",
@@ -43,7 +45,9 @@ def client_credentials_grant_request(hydra_url, client_id, client_secret, scope=
     )
 
 
-def auth_code_grant_request(hydra_url, client_id, client_secret, auth_code, redirect_uri):
+def auth_code_grant_request(
+    hydra_url: str, client_id: str, client_secret: str, auth_code: str, redirect_uri: str
+) -> requests.Response:
     url = join(hydra_url, "oauth2/token")
     body = {
         "code": auth_code,
@@ -55,5 +59,18 @@ def auth_code_grant_request(hydra_url, client_id, client_secret, auth_code, redi
         url,
         data=body,
         auth=(client_id, client_secret),
+        verify=False,
+    )
+
+
+def userinfo_request(hydra_url: str, access_token: str) -> requests.Response:
+    url = join(hydra_url, "userinfo")
+
+    return requests.get(
+        url,
+        headers={
+            "Authorization": "Bearer " + access_token,
+            "Content-Type": "application/json",
+        },
         verify=False,
     )
