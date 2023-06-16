@@ -205,7 +205,7 @@ async def test_multiple_kratos_external_idp_integrators(
     assert "redirect-uri" in action_output.results
 
 
-async def test_kratos_scale_up(ops_test: OpsTest):
+async def test_kratos_scale_up(ops_test: OpsTest) -> None:
     """Check that kratos works after it is scaled up."""
     app_name = "kratos"
 
@@ -229,7 +229,7 @@ async def test_kratos_scale_up(ops_test: OpsTest):
     assert resp.status_code == 200
 
 
-async def test_hydra_scale_up(ops_test: OpsTest):
+async def test_hydra_scale_up(ops_test: OpsTest) -> None:
     """Check that hydra works after it is scaled up."""
     app_name = "hydra"
 
@@ -324,8 +324,15 @@ async def test_authorization_code_flow(
     )
     json_resp = resp.json()
 
-    assert "id_token" in resp.json()
-    assert "access_token" in resp.json()
+    assert "id_token" in json_resp
+    assert "access_token" in json_resp
+
+    # Try to use the access token
+    resp = userinfo_request(hydra_url, json_resp["access_token"])
+    json_resp = resp.json()
+
+    assert resp.status_code == 200
+    assert json_resp["email"] == dex_user_email
 
 
 async def test_client_credentials_flow(
