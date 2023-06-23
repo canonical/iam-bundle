@@ -23,7 +23,7 @@ from integration.auth_utils import (
     get_authorization_url,
     userinfo_request,
 )
-from integration.conftest import apply_dex_resources
+from integration.dex import apply_dex_resources
 
 logger = logging.getLogger(__name__)
 
@@ -74,7 +74,7 @@ async def get_reverse_proxy_app_url(
 
 @pytest.mark.skip_if_deployed
 @pytest.mark.abort_on_fail
-async def test_render_and_deploy_bundle(ops_test: OpsTest, ext_idp_service: None) -> None:
+async def test_render_and_deploy_bundle(ops_test: OpsTest, ext_idp_service: str) -> None:
     """Render the bundle from template and deploy using ops_test."""
     await ops_test.model.set_config({"logging-config": "<root>=WARNING; unit=DEBUG"})
 
@@ -96,7 +96,7 @@ async def test_render_and_deploy_bundle(ops_test: OpsTest, ext_idp_service: None
             "client_id": DEX_CLIENT_ID,
             "client_secret": DEX_CLIENT_SECRET,
             "provider": "generic",
-            "issuer_url": ext_idp_service,
+            "issuer_url": "https://path/to/dex",
             "scope": "profile email",
         }
     )
@@ -132,7 +132,20 @@ async def test_kratos_is_up(ops_test: OpsTest) -> None:
 
 
 @pytest.mark.abort_on_fail
-async def test_kratos_external_idp_redirect_url(ops_test: OpsTest, client: Client) -> None:
+async def test_kratos_external_idp_redirect_url(
+    ops_test: OpsTest, client: Client, ext_idp_service: str
+) -> None:
+    await ops_test.model.applications[APPS.KRATOS_EXTERNAL_IDP_INTEGRATOR].set_config(
+        {"issuer_url": ext_idp_service, "provider_id": "Dex"}
+    )
+
+    await ops_test.model.wait_for_idle(
+        raise_on_blocked=False,
+        raise_on_error=False,
+        status="active",
+        timeout=2000,
+    )
+
     get_redirect_uri_action = (
         await ops_test.model.applications[APPS.KRATOS_EXTERNAL_IDP_INTEGRATOR]
         .units[0]
@@ -151,9 +164,7 @@ async def test_kratos_external_idp_redirect_url(ops_test: OpsTest, client: Clien
 
 
 @pytest.mark.skip_if_deployed
-async def test_multiple_kratos_external_idp_integrators(
-    ops_test: OpsTest, client: Client, ext_idp_service: str
-) -> None:
+async def test_multiple_kratos_external_idp_integrators(ops_test: OpsTest) -> None:
     """Deploy an additional external idp integrator charm and test the action.
 
     The purpose of this test is to check that kratos allows for integration
@@ -162,10 +173,10 @@ async def test_multiple_kratos_external_idp_integrators(
     additional_idp_name = "generic-external-idp"
 
     config = {
-        "client_id": "id",
-        "client_secret": "a12345",
+        "client_id": "client_id",
+        "client_secret": "client_secret",
         "provider": "generic",
-        "issuer_url": ext_idp_service,
+        "issuer_url": "http://path/to/dex",
         "scope": "profile email",
         "provider_id": "Other",
     }
@@ -294,7 +305,7 @@ async def test_authorization_code_flow(
 
     # Choose provider
     async with page.expect_navigation():
-        await page.get_by_role("button", name="Generic").click()
+        await page.get_by_role("button", name="Dex").click()
 
     expect(page).to_have_url(ext_idp_service)
 

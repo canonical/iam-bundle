@@ -9,13 +9,17 @@ from typing import Any, AsyncGenerator, Callable, Coroutine, Dict, Generator
 import pytest
 from lightkube import Client, KubeConfig
 from lightkube.core.exceptions import ApiError
-from lightkube.resources.apps_v1 import Deployment
 from playwright.async_api import async_playwright
 from playwright.async_api._generated import Browser, BrowserContext, BrowserType, Page
 from playwright.async_api._generated import Playwright as AsyncPlaywright
 from pytest_operator.plugin import OpsTest
 
-from integration.dex import apply_dex_resources, get_dex_manifest, get_dex_service_ip
+from integration.dex import (
+    apply_dex_resources,
+    create_dex_resources,
+    get_dex_manifest,
+    get_dex_service_url,
+)
 
 logger = logging.getLogger(__name__)
 KUBECONFIG = os.environ.get("TESTING_KUBECONFIG", "~/.kube/config")
@@ -30,18 +34,15 @@ def client() -> Client:
 def ext_idp_service(ops_test: OpsTest, client: Client) -> Generator[str, None, None]:
     # Use ops-lib-manifests?
     try:
-        try:
-            client.get(Deployment, "dex", namespace="dex")
-        except ApiError:
-            logger.info("Deploying dex resources")
-            apply_dex_resources(client, restart=False)
+        logger.info("Deploying dex resources")
+        create_dex_resources(client)
 
-            # We need to set the dex issuer_url to be the IP that was assigned to
-            # the dex service by metallb. We can't know that before hand, so we
-            # reapply the dex manifests.
-            apply_dex_resources(client)
+        # We need to set the dex issuer_url to be the IP that was assigned to
+        # the dex service by metallb. We can't know that before hand, so we
+        # reapply the dex manifests.
+        apply_dex_resources(client)
 
-        yield get_dex_service_ip(client)
+        yield get_dex_service_url(client)
     finally:
         if ops_test.keep_model:
             return
