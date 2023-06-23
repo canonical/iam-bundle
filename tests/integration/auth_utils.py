@@ -2,7 +2,6 @@
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-from base64 import b64encode
 from os.path import join
 from secrets import token_urlsafe
 from urllib.parse import urlencode
@@ -10,7 +9,7 @@ from urllib.parse import urlencode
 import requests
 
 
-def construct_authorization_url(hydra_url: str, client_id: str, client_secret: str) -> str:
+def get_authorization_url(hydra_url: str, client_id: str, client_secret: str) -> str:
     params = {
         "client_id": client_id,
         "redirect_uri": client_secret,
@@ -21,11 +20,6 @@ def construct_authorization_url(hydra_url: str, client_id: str, client_secret: s
         "nonce": token_urlsafe(),
     }
     return join(hydra_url, "oauth2/auth?" + urlencode(params))
-
-
-def get_basic_http_auth_header(username: str, password: str) -> str:
-    token = b64encode(f"{username}:{password}".encode("utf-8")).decode("ascii")
-    return f"Basic {token}"
 
 
 def client_credentials_grant_request(

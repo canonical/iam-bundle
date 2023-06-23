@@ -27,7 +27,7 @@ def client() -> Client:
 
 
 @pytest.fixture(scope="module")
-def dex(ops_test: OpsTest, client: Client) -> Generator[str, None, None]:
+def ext_idp_service(ops_test: OpsTest, client: Client) -> Generator[str, None, None]:
     # Use ops-lib-manifests?
     try:
         try:
@@ -36,8 +36,9 @@ def dex(ops_test: OpsTest, client: Client) -> Generator[str, None, None]:
             logger.info("Deploying dex resources")
             apply_dex_resources(client, restart=False)
 
-            # We need to patch the dex service to apply the metallb ip, we don't know that before
-            # the service is created
+            # We need to set the dex issuer_url to be the IP that was assigned to
+            # the dex service by metallb. We can't know that before hand, so we
+            # reapply the dex manifests.
             apply_dex_resources(client)
 
         yield get_dex_service_ip(client)
@@ -80,14 +81,11 @@ async def playwright() -> AsyncGenerator[AsyncPlaywright, None]:
 
 @pytest.fixture(scope="module")
 def browser_type(playwright: AsyncPlaywright, browser_name: str) -> BrowserType:
-    if browser_name == "chromium":
-        return playwright.chromium
-    elif browser_name == "firefox":
+    if browser_name == "firefox":
         return playwright.firefox
     elif browser_name == "webkit":
         return playwright.webkit
-    else:
-        return playwright.chromium
+    return playwright.chromium
 
 
 @pytest.fixture(scope="module")

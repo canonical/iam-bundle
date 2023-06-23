@@ -93,6 +93,8 @@ def apply_dex_resources(
         try:
             dex_is_ready(client, issuer_url)
         except (RuntimeError, RequestException):
+            # It may take some time for dex to restart, so we sleep a little
+            # and try again
             sleep(3)
             dex_is_ready(client, issuer_url)
 
