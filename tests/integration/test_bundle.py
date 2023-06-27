@@ -270,8 +270,8 @@ async def test_create_hydra_client(ops_test: OpsTest, ext_idp_service: str) -> N
 async def test_authorization_code_flow(
     ops_test: OpsTest,
     ext_idp_service: str,
-    dex_user_email: str,
-    dex_user_password: str,
+    external_user_email: str,
+    external_user_password: str,
     page: Page,
 ) -> None:
     # This is a hack, we just need a server to be running on the redirect_uri
@@ -311,9 +311,9 @@ async def test_authorization_code_flow(
 
     # Login
     await page.get_by_placeholder("email address").click()
-    await page.get_by_placeholder("email address").fill(dex_user_email)
+    await page.get_by_placeholder("email address").fill(external_user_email)
     await page.get_by_placeholder("password").click()
-    await page.get_by_placeholder("password").fill(dex_user_password)
+    await page.get_by_placeholder("password").fill(external_user_password)
     await page.get_by_role("button", name="Login").click()
 
     await page.wait_for_url(redirect_uri + "?*")
@@ -337,7 +337,7 @@ async def test_authorization_code_flow(
     json_resp = resp.json()
 
     assert resp.status_code == 200
-    assert json_resp["email"] == dex_user_email
+    assert json_resp["email"] == external_user_email
 
 
 async def test_client_credentials_flow(

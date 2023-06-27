@@ -55,12 +55,12 @@ def ext_idp_service(ops_test: OpsTest, client: Client) -> Generator[str, None, N
 
 
 @pytest.fixture()
-def dex_user_email() -> str:
+def external_user_email() -> str:
     return "admin@example.com"
 
 
 @pytest.fixture()
-def dex_user_password() -> str:
+def external_user_password() -> str:
     return "password"
 
 
