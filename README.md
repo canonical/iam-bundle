@@ -23,3 +23,10 @@ To deploy the bundle, run `juju deploy ./bundle-edge.yaml --trust`.
 Integration tests can be run with `tox`.
 
 In order to launch tests against an already deployed bundle, run `tox -e integration -- --model=your-model --keep-models --no-deploy`.
+
+
+## Debugging Playwright tests
+To debug the playwright tests you need to run:
+```
+PWDEBUG=1 PYTHONPATH=. pytest
+```

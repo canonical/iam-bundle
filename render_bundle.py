@@ -75,7 +75,9 @@ def parse_args() -> Tuple[Path, Path, Dict[str, str]]:
     return bundle_args.template, bundle_args.output, variables
 
 
-def render_bundle(template: Path, output: Path, variables: Optional[Dict[str, str]] = None):
+def render_bundle(
+    template: Path, output: Path, variables: Optional[Dict[str, str]] = None
+) -> None:
     """The main function for rendering the bundle template."""
     if variables is None:
         variables = {}
