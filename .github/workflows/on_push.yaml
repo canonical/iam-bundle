@@ -12,6 +12,7 @@ on:
     branches:
       - main
       - track/**
+      - IAM-240-publish-on-push
 
 jobs:
   tests:
