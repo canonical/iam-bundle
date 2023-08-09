@@ -1,7 +1,7 @@
 ---
 {%- set testing = testing is defined and testing.casefold() in ["1", "yes", "true"] %}
 bundle: kubernetes
-name: iam
+name: identity-platform
 website: https://github.com/canonical/iam-bundle
 issues: https://github.com/canonical/iam-bundle/issues
 applications:
@@ -45,25 +45,18 @@ applications:
     {%- endif %}
   traefik-admin:
     charm: traefik-k8s
+    revision: 136
     channel: edge
     series: focal
     scale: 1
     trust: true
   traefik-public:
     charm: traefik-k8s
+    revision: 136
     channel: edge
     series: focal
     scale: 1
     trust: true
-  {%- if testing %}
-# TODO: Uncomment when grafana is integrated with oauth
-#  grafana-k8s:
-#    charm: grafana-k8s
-#    channel: edge
-#    series: jammy
-#    scale: 1
-#    trust: true
-  {%- endif %}
 relations:
   - [hydra:pg-database, postgresql-k8s:database]
   - [kratos:pg-database, postgresql-k8s:database]
@@ -78,9 +71,5 @@ relations:
   - [identity-platform-login-ui-operator:ui-endpoint-info, hydra:ui-endpoint-info]
   - [identity-platform-login-ui-operator:ui-endpoint-info, kratos:ui-endpoint-info]
   - [identity-platform-login-ui-operator:kratos-endpoint-info, kratos:kratos-endpoint-info]
-  {% if testing -%}
-# TODO: Uncomment when grafana is integrated with oauth
-#  - [grafana:oauth, hydra:oauth]
-  {% endif -%}
   - [traefik-admin:certificates, tls-certificates-operator:certificates]
   - [traefik-public:certificates, tls-certificates-operator:certificates]

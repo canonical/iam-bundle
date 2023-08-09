@@ -10,12 +10,12 @@ on:
 
 jobs:
   publish-bundle-edge:
-    name: Publish iam-bundle in edge channel
+    name: Publish identity-platform bundle in edge channel
     runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
       matrix:
-        bundle: [iam]
+        bundle: [identity-platform]
     env:
       CHARMCRAFT_AUTH: ${{ secrets.CHARMCRAFT_CREDENTIALS }}
     steps:

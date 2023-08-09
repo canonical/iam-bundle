@@ -17,7 +17,13 @@ If you would like to deploy the bundle with a locally built charm, modify the fi
 ```
 
 ## Deploy a bundle
-To deploy the bundle, run `juju deploy ./bundle-edge.yaml --trust`.
+To deploy a bundle from Charmhub, run:
+
+`juju deploy identity-platform --channel edge --trust`
+
+To deploy a local bundle, run:
+
+`juju deploy ./bundle-edge.yaml --trust`
 
 ## Test the bundle
 Integration tests can be run with `tox`.
