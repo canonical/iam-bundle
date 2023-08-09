@@ -89,7 +89,7 @@ async def test_render_and_deploy_bundle(ops_test: OpsTest, ext_idp_service: str)
 
     logger.info(f"Rendered bundle {str(rendered_bundle)}")
 
-    await ops_test.model.deploy(rendered_bundle, trust=True)
+    await ops_test.run("juju", "deploy", rendered_bundle, "--trust")
 
     await ops_test.model.applications[APPS.KRATOS_EXTERNAL_IDP_INTEGRATOR].set_config(
         {
