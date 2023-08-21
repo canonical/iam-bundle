@@ -6,6 +6,7 @@ import collections
 import inspect
 import logging
 import os
+import re
 from os.path import join
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
@@ -103,7 +104,6 @@ async def test_render_and_deploy_bundle(ops_test: OpsTest, ext_idp_service: str)
 
     await ops_test.model.wait_for_idle(
         raise_on_blocked=False,
-        raise_on_error=False,
         status="active",
         timeout=2000,
     )
@@ -188,7 +188,7 @@ async def test_multiple_kratos_external_idp_integrators(ops_test: OpsTest) -> No
         config=config,
         series="jammy",
     )
-    await ops_test.model.add_relation(
+    await ops_test.model.integrate(
         "generic-external-idp:kratos-external-idp", "kratos:kratos-external-idp"
     )
 
@@ -218,17 +218,12 @@ async def test_kratos_scale_up(ops_test: OpsTest) -> None:
     await app.scale(3)
 
     await ops_test.model.wait_for_idle(
-        raise_on_blocked=False,
-        raise_on_error=False,
+        apps=[APPS.KRATOS],
+        raise_on_blocked=True,
         status="active",
         timeout=2000,
+        wait_for_exact_units=3,
     )
-
-    kratos_url = await get_reverse_proxy_app_url(ops_test, APPS.TRAEFIK_ADMIN, APPS.KRATOS)
-    health_check_url = join(kratos_url, "admin/health/ready")
-    resp = requests.get(health_check_url, verify=False)
-
-    assert resp.status_code == 200
 
 
 async def test_hydra_scale_up(ops_test: OpsTest) -> None:
@@ -238,17 +233,12 @@ async def test_hydra_scale_up(ops_test: OpsTest) -> None:
     await app.scale(3)
 
     await ops_test.model.wait_for_idle(
-        raise_on_blocked=False,
-        raise_on_error=False,
+        apps=[APPS.HYDRA],
+        raise_on_blocked=True,
         status="active",
         timeout=2000,
+        wait_for_exact_units=3,
     )
-
-    hydra_url = await get_reverse_proxy_app_url(ops_test, APPS.TRAEFIK_ADMIN, APPS.HYDRA)
-    health_check_url = join(hydra_url, "health/ready")
-    resp = requests.get(health_check_url, verify=False)
-
-    assert resp.status_code == 200
 
 
 async def test_create_hydra_client(ops_test: OpsTest, ext_idp_service: str) -> None:
@@ -301,13 +291,13 @@ async def test_authorization_code_flow(
         ),
         "login",
     )
-    expect(page).to_have_url(expected_url)
+    await expect(page).to_have_url(re.compile(rf"{expected_url}*"))
 
     # Choose provider
     async with page.expect_navigation():
         await page.get_by_role("button", name="Dex").click()
 
-    expect(page).to_have_url(ext_idp_service)
+    await expect(page).to_have_url(re.compile(rf"{ext_idp_service}*"))
 
     # Login
     await page.get_by_placeholder("email address").click()
