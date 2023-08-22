@@ -289,7 +289,7 @@ async def test_authorization_code_flow(
         await get_reverse_proxy_app_url(
             ops_test, APPS.TRAEFIK_PUBLIC, "identity-platform-login-ui-operator"
         ),
-        "login",
+        "ui/login",
     )
     await expect(page).to_have_url(re.compile(rf"{expected_url}*"))
 
