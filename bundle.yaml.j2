@@ -37,26 +37,25 @@ applications:
     series: jammy
     scale: 1
     trust: true
-  tls-certificates-operator:
-    charm: tls-certificates-operator
-    channel: stable
+  self-signed-certificates:
+    charm: self-signed-certificates
+    channel: edge
     scale: 1
     {%- if testing %}
     options:
       ca-common-name: demo.ca.local
-      generate-self-signed-certificates: true
     {%- endif %}
   traefik-admin:
     charm: traefik-k8s
-    revision: 136
-    channel: edge
+    revision: 143
+    channel: latest/edge
     series: focal
     scale: 1
     trust: true
   traefik-public:
     charm: traefik-k8s
-    revision: 136
-    channel: edge
+    revision: 143
+    channel: latest/edge
     series: focal
     scale: 1
     trust: true
@@ -74,5 +73,7 @@ relations:
   - [identity-platform-login-ui-operator:ui-endpoint-info, hydra:ui-endpoint-info]
   - [identity-platform-login-ui-operator:ui-endpoint-info, kratos:ui-endpoint-info]
   - [identity-platform-login-ui-operator:kratos-endpoint-info, kratos:kratos-endpoint-info]
-  - [traefik-admin:certificates, tls-certificates-operator:certificates]
-  - [traefik-public:certificates, tls-certificates-operator:certificates]
+  - [traefik-admin:certificates, self-signed-certificates:certificates]
+  - [traefik-public:certificates, self-signed-certificates:certificates]
+  - [traefik-admin:receive-ca-cert, self-signed-certificates:send-ca-cert]
+  - [traefik-public:receive-ca-cert, self-signed-certificates:send-ca-cert]
