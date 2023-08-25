@@ -39,6 +39,7 @@ applications:
     trust: true
   self-signed-certificates:
     charm: self-signed-certificates
+    revision: 22
     channel: edge
     scale: 1
     {%- if testing %}
@@ -75,5 +76,3 @@ relations:
   - [identity-platform-login-ui-operator:kratos-endpoint-info, kratos:kratos-endpoint-info]
   - [traefik-admin:certificates, self-signed-certificates:certificates]
   - [traefik-public:certificates, self-signed-certificates:certificates]
-  - [traefik-admin:receive-ca-cert, self-signed-certificates:send-ca-cert]
-  - [traefik-public:receive-ca-cert, self-signed-certificates:send-ca-cert]
