@@ -1,38 +1,25 @@
-# IAM Bundle
-This repository hosts IAM bundle definitions and tests.
+# Identity Platform Bundle
 
-## Generate a bundle
-In order to generate a bundle file, clone this repository and use the `render-{channel}` utility.
-For example, to get the bundle from `edge` channel, run `tox -e render-edge`.
+This repository includes Identity Platform bundle definitions and tests. The
+bundle includes the following charmed operators:
 
-If you would like to deploy the bundle with a locally built charm, modify the file adding its path and image:
-```yaml
-  hydra:
-    charm: ./path-to-your.charm
-    resources:
-      oci-image: oryd/hydra:v2.0.3
-    scale: 1
-    series: jammy
-    trust: true
+- [x] [kratos operator](https://github.com/canonical/kratos-operator)
+- [x] [hydra operator](https://github.com/canonical/hydra-operator)
+- [x] [identity platform login ui operator](https://github.com/canonical/identity-platform-login-ui-operator)
+- [x] [kratos external idp integrator](https://github.com/canonical/kratos-external-idp-integrator)
+- [x] [postgresql k8s operator](https://github.com/canonical/postgresql-k8s-operator)
+- [x] [traefik k8s operator](https://github.com/canonical/traefik-k8s-operator)
+- [x] [self-signed certificates operator](https://github.com/canonical/self-signed-certificates-operator)
+
+## Deploy the bundle
+
+To deploy the bundle from the CharmHub, run the following:
+
+```shell
+$ juju deploy identity-platform --channel <channel, e.g. edge> --trust
 ```
 
-## Deploy a bundle
-To deploy a bundle from Charmhub, run:
+## Contributing
 
-`juju deploy identity-platform --channel edge --trust`
-
-To deploy a local bundle, run:
-
-`juju deploy ./bundle-edge.yaml --trust`
-
-## Test the bundle
-Integration tests can be run with `tox`.
-
-In order to launch tests against an already deployed bundle, run `tox -e integration -- --model=your-model --keep-models --no-deploy`.
-
-
-## Debugging Playwright tests
-To debug the playwright tests you need to run:
-```
-PWDEBUG=1 PYTHONPATH=. pytest
-```
+Please refer to the [contribution documentation](CONTRIBUTING.md) to learn how
+to contribute to the project.

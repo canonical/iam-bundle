@@ -1,69 +1,106 @@
-# Contributing
+# Contributing to Identity Platform Bundle
 
 ## Overview
 
-This document explains the processes and practices recommended for contributing enhancements to
-this operator.
+This document illustrates the processes and practices recommended for
+contributing to the Identity Platform bundle.
 
-<!-- TEMPLATE-TODO: Update the URL for issue creation -->
+## Developing the bundle integration test
 
-- Generally, before developing enhancements to this charm, you should consider [opening an issue
-  ](https://github.com/canonical/operator-template/issues) explaining your use case.
-- If you would like to chat with us about your use-cases or proposed implementation, you can reach
-  us at [Canonical Mattermost public channel](https://chat.charmhub.io/charmhub/channels/charm-dev)
-  or [Discourse](https://discourse.charmhub.io/).
-- Familiarising yourself with the [Charmed Operator Framework](https://juju.is/docs/sdk) library
-  will help you a lot when working on new features or bug fixes.
-- All enhancements require review before being merged. Code review typically examines
-  - code quality
-  - test coverage
-  - user experience for Juju administrators of this charm.
-- Please help us out in ensuring easy to review branches by rebasing your pull request branch onto
-  the `main` branch. This also avoids merge commits and creates a linear Git commit history.
-
-## Developing
-
-You can use the environments created by `tox` for development:
+You can use the environments created by `tox` for test development:
 
 ```shell
-tox --notest -e unit
-source .tox/unit/bin/activate
+$ tox --notest -e integration
+$ source .tox/integration/bin/activate
 ```
 
-### Testing
+### Debugging Playwright tests
+
+There are some test cases depending
+on [Playwright](https://playwright.dev/python/) to run. To debug the Playwright
+test cases:
+
+```
+$ PWDEBUG=1 PYTHONPATH=. pytest
+```
+
+## Code style and quality enforcement
 
 ```shell
-tox -e fmt           # update your code according to linting rules
-tox -e lint          # code style
-tox -e unit          # unit tests
-tox -e integration   # integration tests
-tox                  # runs 'lint' and 'unit' environments
+$ tox -e fmt           # update your code according to linting rules
+$ tox -e lint          # code style
 ```
 
-## Build charm
-
-Build the charm in this git repository using:
+## Testing the bundle
 
 ```shell
-charmcraft pack
+$ tox -e integration   # integration test
 ```
 
-### Deploy
+In order to run the integration test against a deployed bundle, run
 
-<!-- TEMPLATE-TODO: Update the deploy command for name of charm-->
-
-```bash
-# Create a model
-juju add-model dev
-# Enable DEBUG logging
-juju model-config logging-config="<root>=INFO;unit=DEBUG"
-# Deploy the charm
-juju deploy ./template-operator_ubuntu-20.04-amd64.charm \
-    --resource httpbin-image=kennethreitz/httpbin \
+```shell
+$ tox -e integration -- --model=<model name> --keep-models --no-deploy
 ```
+
+## Deploy the bundle locally
+
+Render the bundle file with desired channel:
+
+```shell
+$ tox -e render-<channel, e.g. edge>
+```
+
+or directly run the utility:
+
+```shell
+$ ./bundle_renderer.py bundle.yaml.j2 \
+    -o render-<channel>.yaml \
+    -c <channel> \
+    --variables <key1>=<val1>,<key2>=<val2>
+```
+
+Use the rendered bundle file to deploy the bundle locally:
+
+```shell
+$ juju deploy ./bundle-<channel, e.g. edge>.yaml --trust
+```
+
+To deploy the bundle with a locally built charm and OCI image, update the bundle
+file. Take an example of hydra charm:
+
+```yaml
+hydra:
+  charm: <path to the local charm>
+  resources:
+    oci-image: <path to a local file / link to a public OCI image, e.g. ghcr.io/canonical/hydra:2.1.1>
+```
+
+## Upgrade the charms in the bundle
+
+Please follow the instructions to upgrade a charm or charms in the bundle:
+
+- Update the revision(s) of the target charm(s) by submitting a pull request
+- Wait for the integration test to pass and team approval
+- If integration test fails, either fix the problematic charm(s) and update the
+  revision(s) in the pull request, or close and discard the pull request
+
+> :rotating_light: **Note:**
+>
+> - The revision of a charm is expected to be the latest version that can be
+    published to channels
+
+## Publish the bundle
+
+Currently, publishing the bundle is via
+the [`publish` GitHub action](https://github.com/canonical/iam-bundle/actions/workflows/publish.yaml).
+
+> :rotating_light: **Note:**
+>
+> - Only publishing to `edge` channel is supported for now
 
 ## Canonical Contributor Agreement
 
-<!-- TEMPLATE-TODO: Update the description with the name of charm-->
-
-Canonical welcomes contributions to the Charmed Template Operator. Please check out our [contributor agreement](https://ubuntu.com/legal/contributors) if you're interested in contributing to the solution.
+Canonical welcomes contributions to the Charmed Template Operator. Please check
+out our [contributor agreement](https://ubuntu.com/legal/contributors) if you're
+interested in contributing to the solution.
