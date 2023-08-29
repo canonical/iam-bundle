@@ -5,6 +5,19 @@
 This document illustrates the processes and practices recommended for
 contributing to the Identity Platform bundle.
 
+- Generally, before developing bugs or enhancements to this bundle and tests,
+  you should [open an issue](https://github.com/canonical/iam-bundle/issues)
+  explaining your use case.
+- All enhancements require review before being merged. Code review typically
+  examines
+    - code quality
+    - test functionality
+    - test coverage
+- Please help us out in ensuring easy to review branches by rebasing your pull
+  request branch onto
+  the `main` branch. This also avoids merge commits and creates a linear Git
+  commit history.
+
 ## Developing the bundle integration test
 
 You can use the environments created by `tox` for test development:
