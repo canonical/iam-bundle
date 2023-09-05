@@ -7,6 +7,9 @@ jobs:
   integration-test-microk8s:
     name: Integration tests (microk8s)
     runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        version: [27,28]
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -15,7 +18,7 @@ jobs:
         uses: charmed-kubernetes/actions-operator@main
         with:
           provider: microk8s
-          channel: 1.28-strict/stable
+          channel: 1.${{ matrix.version }}-strict/stable
           juju-channel: 3.1
           bootstrap-options: '--agent-version=3.1.0'
           # provide a pool of at least 3 IP addresses to the metallb addon
