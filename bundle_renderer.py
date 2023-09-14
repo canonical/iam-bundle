@@ -9,7 +9,7 @@ from functools import singledispatch
 from io import TextIOWrapper
 from pathlib import Path
 from textwrap import dedent
-from typing import MutableMapping, Union
+from typing import MutableMapping
 
 from git import Repo
 from jinja2 import Environment, FileSystemLoader
@@ -24,8 +24,9 @@ def generate_output(output, content: str) -> None:
     raise NotImplementedError
 
 
-@generate_output.register
-def _(output: Union[str, Path], content: str) -> None:
+@generate_output.register(str)
+@generate_output.register(Path)
+def _(output, content: str) -> None:
     with open(output, mode="wt", encoding="utf-8") as dest:
         dest.write(content)
 
