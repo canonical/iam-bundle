@@ -4,6 +4,7 @@
 
 
 import argparse
+import re
 import sys
 from functools import singledispatch
 from io import TextIOWrapper
@@ -14,9 +15,15 @@ from typing import MutableMapping
 from git import Repo
 from jinja2 import Environment, FileSystemLoader
 
-CHANNELS = ["edge", "beta", "candidate", "stable"]
+CHANNELS = re.compile(r"^(latest/|[0-9].[0-9]/)?(edge|beta|candidate|stable)$")
 ROOT_DIR = Repo(Path(__file__), search_parent_directories=True).working_dir
 TEMPLATE_DIRS = [ROOT_DIR, Path(ROOT_DIR) / "templates"]
+
+
+def channel_type(arg_value):
+    if not CHANNELS.match(arg_value):
+        raise argparse.ArgumentTypeError("invalid channel")
+    return arg_value
 
 
 @singledispatch
@@ -83,8 +90,7 @@ def main():
         "--channel",
         dest="channel",
         required=True,
-        type=str,
-        choices=CHANNELS,
+        type=channel_type,
         help="the CharmHub channel to publish the bundle",
     )
     parser.add_argument(

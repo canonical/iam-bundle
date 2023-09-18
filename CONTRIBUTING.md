@@ -64,6 +64,12 @@ Render the bundle file with desired channel:
 $ tox -e render-<channel, e.g. edge>
 ```
 
+Render the bundle file with desired channel and version:
+
+```shell
+$ VERSION=<version, e.g. 0.1> tox -e render-<channel, e.g. edge>
+```
+
 or directly run the utility:
 
 ```shell

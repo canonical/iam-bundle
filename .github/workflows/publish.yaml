@@ -26,13 +26,29 @@ jobs:
           sudo apt-get update -yqq
           sudo apt-get install -yqq python3-pip
           sudo --preserve-env=http_proxy,https_proxy,no_proxy pip3 install tox
+
+      - name: Select charmhub channel
+        uses: canonical/charming-actions/channel@2.4.0
+        id: select-channel
+        if: ${{ inputs.destination_channel == '' }}
+
+      # Combine inputs from different sources to a single canonical value so later steps don't
+      # need logic for picking the right one
+      - name: Parse and combine inputs
+        id: parse-inputs
+        run: |
+          # destination_channel
+          destination_channel="${{ inputs.destination_channel || steps.select-channel.outputs.name }}"
+          echo "setting output of destination_channel=$destination_channel"
+          echo "::set-output name=destination_channel::$destination_channel"
+
       - name: Pack and publish bundle
         run: |
           set -ex
           # Use a temporary directory to support publishing any of the bundles in this root dir
           BUILD_DIR=.bundle_build
           mkdir $BUILD_DIR
-          tox -e render-edge
+          VERSION=${{ steps.parse-inputs.outputs.destination_channel }} tox -e render-edge
           cp ./bundle-edge.yaml $BUILD_DIR/bundle.yaml
           # Reuse the same charmcraft.yaml, license and readme for all bundles
           cp ./charmcraft.yaml $BUILD_DIR/
@@ -42,7 +58,7 @@ jobs:
           charmcraft pack
           charmcraft upload ./*.zip
           export REVISION=$(charmcraft revisions ${{ matrix.bundle }} 2>&1 | awk 'NR==2 {print $1}')
-          charmcraft release ${{ matrix.bundle }} --revision $REVISION --channel=latest/edge
+          charmcraft release ${{ matrix.bundle }} --revision $REVISION --channel=${{ steps.parse-inputs.outputs.destination_channel }}
       - name: Dump logs
         if: failure()
         run: |
