@@ -48,7 +48,10 @@ jobs:
           # Use a temporary directory to support publishing any of the bundles in this root dir
           BUILD_DIR=.bundle_build
           mkdir $BUILD_DIR
-          VERSION=${{ steps.parse-inputs.outputs.destination_channel }} tox -e render-edge
+          CHANNEL=${{ steps.parse-inputs.outputs.destination_channel }}
+          # Extract version from the channel, e.g. get 0.1 out of 0.1/edge.
+          _CHANNEL=(${CHANNEL//// })
+          VERSION=${_CHANNEL[0]} tox -e render-edge
           cp ./bundle-edge.yaml $BUILD_DIR/bundle.yaml
           # Reuse the same charmcraft.yaml, license and readme for all bundles
           cp ./charmcraft.yaml $BUILD_DIR/
