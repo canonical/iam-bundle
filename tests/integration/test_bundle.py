@@ -267,7 +267,7 @@ async def test_authorization_code_flow(
     # This is a hack, we just need a server to be running on the redirect_uri
     # so that when we get redirected there we don't get a connection_refused
     # error.
-    redirect_uri = join(ext_idp_service, "some", "path")
+    redirect_uri = await get_reverse_proxy_app_url(ops_test, APPS.TRAEFIK_PUBLIC, "dummy")
     app = ops_test.model.applications[APPS.HYDRA]
     action = await app.units[0].run_action(
         "create-oauth-client",
