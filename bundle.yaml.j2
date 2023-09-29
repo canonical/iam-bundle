@@ -7,14 +7,14 @@ issues: https://github.com/canonical/iam-bundle/issues
 applications:
   hydra:
     charm: hydra
-    revision: 260
+    revision: 267
     channel: {{ channel|default('edge', true) }}
     scale: 1
     series: jammy
     trust: true
   kratos:
     charm: kratos
-    revision: 376
+    revision: 383
     channel: {{ channel|default('edge', true) }}
     scale: 1
     series: jammy
@@ -27,7 +27,7 @@ applications:
     series: jammy
   identity-platform-login-ui-operator:
     charm: identity-platform-login-ui-operator
-    revision: 71
+    revision: 74
     channel: {{ channel|default('edge', true) }}
     scale: 1
     series: jammy
