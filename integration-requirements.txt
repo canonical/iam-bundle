@@ -3,5 +3,5 @@ jinja2
 juju
 lightkube
 pytest-playwright
-pytest-operator==0.27.0
+pytest-operator==0.31.1
 -r requirements.txt
