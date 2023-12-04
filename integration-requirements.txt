@@ -1,3 +1,4 @@
+pytest-asyncio==0.21.1
 pytest
 jinja2
 juju
