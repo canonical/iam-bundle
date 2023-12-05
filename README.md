@@ -1,5 +1,7 @@
 # Identity Platform Bundle
 
+[![CharmHub Badge](https://charmhub.io/identity-platform/badge.svg)](https://charmhub.io/identity-platform)
+
 This repository includes Identity Platform bundle definitions and tests. The
 bundle includes the following charmed operators:
 
