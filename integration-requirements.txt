@@ -1,3 +1,5 @@
+# TODO: remove when pr https://github.com/go-macaroon-bakery/py-macaroon-bakery/pull/95 gets merged
+macaroonbakery==1.3.2
 pytest
 jinja2
 juju
@@ -5,3 +7,4 @@ lightkube
 pytest-playwright
 pytest-operator==0.31.1
 -r requirements.txt
+
