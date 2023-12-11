@@ -1,29 +1,15 @@
-name: On Pull Request
-
-# On pull_request, we:
-# * always run lint checks
-# * always run tests
+name: Pull Requests
 
 on:
   pull_request:
+    branches:
+      - main
 
 jobs:
-  lint:
-    name: Lint
-    runs-on: ubuntu-22.04
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-
-      - name: Install dependencies
-        run: python3 -m pip install tox
-
-      - name: Run linters
-        run: tox -e lint
-
-  tests:
-    name: Run Tests
-    needs:
-      - lint
-    uses: ./.github/workflows/tests.yaml
+  pull-request:
+    name: PR
+    uses: canonical/observability/.github/workflows/charm-pull-request.yaml@ec142ceb480c89f9920de9e874cf84e098b457aa
     secrets: inherit
+    with:
+      ip-range-start: 10.64.140.43
+      ip-range-end: 10.64.140.46
