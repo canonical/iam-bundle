@@ -43,6 +43,9 @@ def ext_idp_service(ops_test: OpsTest, client: Client) -> Generator[str, None, N
         apply_dex_resources(client)
 
         yield get_dex_service_url(client)
+    except Exception as e:
+        logger.error(f"Failed to deploy dex: {e}")
+        raise
     finally:
         if ops_test.keep_model:
             return
