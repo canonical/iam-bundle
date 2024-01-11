@@ -1,0 +1,8 @@
+Metadata-Version: 2.1
+Name: oauth_tools
+Version: 0.0.1
+Summary: A collection of tools useful for testing oauth interface
+Home-page: https://github.com/canonical/iam-bundle
+Author-email: natalia.nowakowska@canonical.com
+Classifier: Programming Language :: Python :: 3
+License-File: LICENSE
