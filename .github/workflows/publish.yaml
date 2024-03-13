@@ -19,7 +19,7 @@ jobs:
     env:
       CHARMCRAFT_AUTH: ${{ secrets.CHARMCRAFT_CREDENTIALS }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3
       - name: Install dependencies
         run: |
           sudo snap install charmcraft --classic
@@ -28,7 +28,7 @@ jobs:
           sudo --preserve-env=http_proxy,https_proxy,no_proxy pip3 install tox
 
       - name: Select charmhub channel
-        uses: canonical/charming-actions/channel@2.4.0
+        uses: canonical/charming-actions/channel@631c2d944da2bd12430f1f3a954c8fffcf2385cd # 2.4.0
         id: select-channel
         if: ${{ inputs.destination_channel == '' }}
 
