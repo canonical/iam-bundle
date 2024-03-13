@@ -48,15 +48,13 @@ applications:
     {%- endif %}
   traefik-admin:
     charm: traefik-k8s
-    revision: 166
-    channel: latest/edge
+    channel: latest/stable
     series: focal
     scale: 1
     trust: true
   traefik-public:
     charm: traefik-k8s
-    revision: 166
-    channel: latest/edge
+    channel: latest/stable
     series: focal
     scale: 1
     trust: true
