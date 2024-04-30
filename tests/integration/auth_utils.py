@@ -4,6 +4,7 @@
 
 from os.path import join
 from secrets import token_urlsafe
+from typing import Optional
 from urllib.parse import urlencode
 
 import requests
@@ -66,5 +67,43 @@ def userinfo_request(hydra_url: str, access_token: str) -> requests.Response:
             "Authorization": "Bearer " + access_token,
             "Content-Type": "application/json",
         },
+        verify=False,
+    )
+
+
+def device_auth_request(
+    hydra_url: str,
+    client_id: str,
+    client_secret: str,
+    scope: Optional[str] = "openid email offline_access",
+) -> requests.Response:
+    url = join(hydra_url, "oauth2/device/auth")
+    body = {
+        "scope": scope,
+        "client_id": client_id,
+    }
+
+    return requests.post(
+        url,
+        data=body,
+        auth=(client_id, client_secret),
+        verify=False,
+    )
+
+
+def device_token_request(
+    hydra_url: str, client_id: str, client_secret: str, device_code: str
+) -> requests.Response:
+    url = join(hydra_url, "oauth2/token")
+    body = {
+        "device_code": device_code,
+        "grant_type": "urn:ietf:params:oauth:grant-type:device_code",
+        "client_id": client_id,
+    }
+
+    return requests.post(
+        url,
+        data=body,
+        auth=(client_id, client_secret),
         verify=False,
     )

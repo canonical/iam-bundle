@@ -21,6 +21,8 @@ from pytest_operator.plugin import OpsTest
 from integration.auth_utils import (
     auth_code_grant_request,
     client_credentials_grant_request,
+    device_auth_request,
+    device_token_request,
     get_authorization_url,
     userinfo_request,
 )
@@ -349,3 +351,102 @@ async def test_client_credentials_flow(
     resp = client_credentials_grant_request(hydra_url, client_id, client_secret)
 
     assert "access_token" in resp.json()
+
+
+async def test_device_flow(
+    ops_test: OpsTest,
+    ext_idp_service: str,
+    external_user_email: str,
+    external_user_password: str,
+    page: Page,
+) -> None:
+    scopes = ["openid", "profile", "email", "offline_access"]
+    app = ops_test.model.applications[APPS.HYDRA]
+    action = await app.units[0].run_action(
+        "create-oauth-client",
+        **{
+            "grant-types": ["urn:ietf:params:oauth:grant-type:device_code"],
+            "scope": scopes,
+        },
+    )
+    res = (await action.wait()).results
+    client_id = res["client-id"]
+    client_secret = res["client-secret"]
+
+    hydra_url = await get_reverse_proxy_app_url(ops_test, APPS.TRAEFIK_PUBLIC, APPS.HYDRA)
+
+    # Make the device auth request
+    auth_resp = device_auth_request(hydra_url, client_id, client_secret, scope=" ".join(scopes))
+
+    device_auth_resp = auth_resp.json()
+    assert "user_code" in device_auth_resp
+    assert "device_code" in device_auth_resp
+    assert "verification_uri" in device_auth_resp
+    assert "verification_uri_complete" in device_auth_resp
+
+    # Polling with the device code
+    token_resp = device_token_request(
+        hydra_url, client_id, client_secret, device_auth_resp["device_code"]
+    )
+
+    assert token_resp.status_code == 400
+    assert token_resp.json()["error"] == "authorization_pending"
+
+    # Go to verification URL
+    await page.goto(device_auth_resp["verification_uri_complete"])
+    expected_url = join(
+        await get_reverse_proxy_app_url(
+            ops_test, APPS.TRAEFIK_PUBLIC, "identity-platform-login-ui-operator"
+        ),
+        "ui/device_code",
+    )
+    await expect(page).to_have_url(re.compile(rf"{expected_url}*"))
+
+    async with page.expect_navigation():
+        await page.get_by_role("button", name="Next").click()
+
+    expected_url = join(
+        await get_reverse_proxy_app_url(
+            ops_test, APPS.TRAEFIK_PUBLIC, "identity-platform-login-ui-operator"
+        ),
+        "ui/login",
+    )
+    await expect(page).to_have_url(re.compile(rf"{expected_url}*"))
+
+    # Choose provider
+    async with page.expect_navigation():
+        await page.get_by_role("button", name="Dex").click()
+
+    await expect(page).to_have_url(re.compile(rf"{ext_idp_service}*"))
+
+    # Login
+    await page.get_by_placeholder("email address").click()
+    await page.get_by_placeholder("email address").fill(external_user_email)
+    await page.get_by_placeholder("password").click()
+    await page.get_by_placeholder("password").fill(external_user_password)
+    await page.get_by_role("button", name="Login").click()
+
+    expected_url = join(
+        await get_reverse_proxy_app_url(
+            ops_test, APPS.TRAEFIK_PUBLIC, "identity-platform-login-ui-operator"
+        ),
+        "ui/device_complete",
+    )
+    await page.wait_for_url(expected_url + "?*")
+
+    # Exchange device code for tokens
+    token_resp = device_token_request(
+        hydra_url, client_id, client_secret, device_auth_resp["device_code"]
+    )
+    token_resp.raise_for_status()
+    json_resp = token_resp.json()
+
+    assert "id_token" in json_resp
+    assert "access_token" in json_resp
+
+    # Try to use the access token
+    resp = userinfo_request(hydra_url, json_resp["access_token"])
+    json_resp = resp.json()
+
+    assert resp.status_code == 200
+    assert json_resp["email"] == external_user_email
