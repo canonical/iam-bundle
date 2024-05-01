@@ -84,7 +84,7 @@ async def test_render_and_deploy_bundle(ops_test: OpsTest, ext_idp_service: str)
     logger.info(f"Rendering bundle {get_bundle_template()}")
 
     # set the "testing" template variable so the template renders for testing
-    context = {"testing": "true", "channel": "edge"}
+    context = {"testing": "true", "channel": "0.2/edge"}
 
     logger.debug(f"Using context {context}")
 

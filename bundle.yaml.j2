@@ -7,14 +7,14 @@ issues: https://github.com/canonical/iam-bundle/issues
 applications:
   hydra:
     charm: hydra
-    revision: 279
+    revision: 285
     channel: {{ channel|default('edge', true) }}
     scale: 1
     series: jammy
     trust: true
   kratos:
     charm: kratos
-    revision: 399
+    revision: 406
     channel: {{ channel|default('edge', true) }}
     scale: 1
     series: jammy
@@ -22,12 +22,12 @@ applications:
   kratos-external-idp-integrator:
     charm: kratos-external-idp-integrator
     channel: {{ channel|default('edge', true) }}
-    revision: 188
+    revision: 192
     scale: 1
     series: jammy
   identity-platform-login-ui-operator:
     charm: identity-platform-login-ui-operator
-    revision: 86
+    revision: 87
     channel: {{ channel|default('edge', true) }}
     scale: 1
     series: jammy
@@ -50,14 +50,14 @@ applications:
   traefik-admin:
     charm: traefik-k8s
     channel: latest/stable
-    revision: 176
+    revision: 171
     series: focal
     scale: 1
     trust: true
   traefik-public:
     charm: traefik-k8s
     channel: latest/stable
-    revision: 176
+    revision: 171
     series: focal
     scale: 1
     trust: true
