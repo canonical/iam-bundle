@@ -1,6 +1,13 @@
 # Identity Platform Bundle
 
 [![CharmHub Badge](https://charmhub.io/identity-platform/badge.svg)](https://charmhub.io/identity-platform)
+![GitHub Tag](https://img.shields.io/github/v/tag/canonical/iam-bundle?label=release)
+[![Juju](https://img.shields.io/badge/Juju%20-3.0+-%23E95420)](https://github.com/juju/juju)
+[![License](https://img.shields.io/github/license/canonical/iam-bundle?label=License)](https://github.com/canonical/iam-bundle/blob/main/LICENSE)
+
+[![Continuous Integration Status](https://github.com/canonical/iam-bundle/actions/workflows/on_push.yaml/badge.svg?branch=main)](https://github.com/canonical/iam-bundle/actions?query=branch%3Amain)
+[![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit)](https://github.com/pre-commit/pre-commit)
+[![Conventional Commits](https://img.shields.io/badge/Conventional%20Commits-1.0.0-%23FE5196.svg)](https://conventionalcommits.org)
 
 This repository includes Identity Platform bundle definitions and tests. The
 bundle includes the following charmed operators:
@@ -18,7 +25,7 @@ bundle includes the following charmed operators:
 To deploy the bundle from the CharmHub, run the following:
 
 ```shell
-$ juju deploy identity-platform --channel <channel, e.g. edge> --trust
+juju deploy identity-platform --channel <channel, e.g. edge> --trust
 ```
 
 ## Contributing
