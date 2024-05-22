@@ -1,8 +1,11 @@
-import pytest
+# Copyright 2024 Canonical Ltd.
+# See LICENSE file for licensing details.
 
 # Dependencies for the oauth integration test
 import os
 from typing import Any, AsyncGenerator, Callable, Coroutine, Dict
+
+import pytest
 from playwright.async_api import async_playwright
 from playwright.async_api._generated import Browser, BrowserContext, BrowserType, Page
 from playwright.async_api._generated import Playwright as AsyncPlaywright
@@ -51,7 +54,7 @@ async def browser_factory(
 
 @pytest.fixture(scope="module")
 async def browser(
-    browser_factory: Callable[..., Coroutine[Any, Any, Browser]]
+    browser_factory: Callable[..., Coroutine[Any, Any, Browser]],
 ) -> AsyncGenerator[Browser, None]:
     browser = await browser_factory()
     yield browser
@@ -76,7 +79,7 @@ async def context_factory(
 
 @pytest.fixture
 async def context(
-    context_factory: Callable[..., Coroutine[Any, Any, BrowserContext]]
+    context_factory: Callable[..., Coroutine[Any, Any, BrowserContext]],
 ) -> AsyncGenerator[BrowserContext, None]:
     context = await context_factory(ignore_https_errors=True)
     yield context

@@ -7,19 +7,18 @@ import os
 from typing import Any, AsyncGenerator, Callable, Coroutine, Dict, Generator
 
 import pytest
-from lightkube import Client, KubeConfig
-from lightkube.core.exceptions import ApiError
-from playwright.async_api import async_playwright
-from playwright.async_api._generated import Browser, BrowserContext, BrowserType, Page
-from playwright.async_api._generated import Playwright as AsyncPlaywright
-from pytest_operator.plugin import OpsTest
-
 from integration.dex import (
     apply_dex_resources,
     create_dex_resources,
     get_dex_manifest,
     get_dex_service_url,
 )
+from lightkube import Client, KubeConfig
+from lightkube.core.exceptions import ApiError
+from playwright.async_api import async_playwright
+from playwright.async_api._generated import Browser, BrowserContext, BrowserType, Page
+from playwright.async_api._generated import Playwright as AsyncPlaywright
+from pytest_operator.plugin import OpsTest
 
 logger = logging.getLogger(__name__)
 KUBECONFIG = os.environ.get("TESTING_KUBECONFIG", "~/.kube/config")
@@ -107,7 +106,7 @@ async def browser_factory(
 
 @pytest.fixture(scope="module")
 async def browser(
-    browser_factory: Callable[..., Coroutine[Any, Any, Browser]]
+    browser_factory: Callable[..., Coroutine[Any, Any, Browser]],
 ) -> AsyncGenerator[Browser, None]:
     browser = await browser_factory()
     yield browser
@@ -132,7 +131,7 @@ async def context_factory(
 
 @pytest.fixture
 async def context(
-    context_factory: Callable[..., Coroutine[Any, Any, BrowserContext]]
+    context_factory: Callable[..., Coroutine[Any, Any, BrowserContext]],
 ) -> AsyncGenerator[BrowserContext, None]:
     context = await context_factory(ignore_https_errors=True)
     yield context

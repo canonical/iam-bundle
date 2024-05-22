@@ -20,12 +20,6 @@ ROOT_DIR = Repo(Path(__file__), search_parent_directories=True).working_dir
 TEMPLATE_DIRS = [ROOT_DIR, Path(ROOT_DIR) / "templates"]
 
 
-def channel_type(arg_value):
-    if not CHANNELS.match(arg_value):
-        raise argparse.ArgumentTypeError("invalid channel")
-    return arg_value
-
-
 @singledispatch
 def generate_output(output, content: str) -> None:
     raise NotImplementedError
@@ -44,9 +38,16 @@ def _(output: TextIOWrapper, content: str) -> None:
         output.write(content)
 
 
+def channel_type(channel: str) -> str:
+    if not CHANNELS.match(channel):
+        raise argparse.ArgumentTypeError("invalid channel")
+
+    return channel
+
+
 def process_template_variables(variables: str) -> dict[str, str]:
     vars_ = (var.split("=") for var in variables.split(","))
-    return {key: val for key, val in vars_}
+    return dict(vars_)
 
 
 def render_bundle_file(template_file: Path, variables: MutableMapping[str, str]) -> str:
@@ -55,7 +56,7 @@ def render_bundle_file(template_file: Path, variables: MutableMapping[str, str])
     return template.render(**variables)
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawDescriptionHelpFormatter,
         description=dedent(

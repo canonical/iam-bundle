@@ -13,11 +13,6 @@ from urllib.parse import parse_qs, urlparse
 
 import pytest
 import requests
-from lightkube import Client
-from playwright.async_api import expect
-from playwright.async_api._generated import Page
-from pytest_operator.plugin import OpsTest
-
 from integration.auth_utils import (
     auth_code_grant_request,
     client_credentials_grant_request,
@@ -27,6 +22,10 @@ from integration.auth_utils import (
     userinfo_request,
 )
 from integration.dex import apply_dex_resources
+from lightkube import Client
+from playwright.async_api import expect
+from playwright.async_api._generated import Page
+from pytest_operator.plugin import OpsTest
 
 logger = logging.getLogger(__name__)
 
@@ -94,15 +93,13 @@ async def test_render_and_deploy_bundle(ops_test: OpsTest, ext_idp_service: str)
 
     await ops_test.run("juju", "deploy", rendered_bundle, "--trust")
 
-    await ops_test.model.applications[APPS.KRATOS_EXTERNAL_IDP_INTEGRATOR].set_config(
-        {
-            "client_id": DEX_CLIENT_ID,
-            "client_secret": DEX_CLIENT_SECRET,
-            "provider": "generic",
-            "issuer_url": "https://path/to/dex",
-            "scope": "profile email",
-        }
-    )
+    await ops_test.model.applications[APPS.KRATOS_EXTERNAL_IDP_INTEGRATOR].set_config({
+        "client_id": DEX_CLIENT_ID,
+        "client_secret": DEX_CLIENT_SECRET,
+        "provider": "generic",
+        "issuer_url": "https://path/to/dex",
+        "scope": "profile email",
+    })
 
     await ops_test.model.wait_for_idle(
         raise_on_blocked=False,
@@ -137,9 +134,10 @@ async def test_kratos_is_up(ops_test: OpsTest) -> None:
 async def test_kratos_external_idp_redirect_url(
     ops_test: OpsTest, client: Client, ext_idp_service: str
 ) -> None:
-    await ops_test.model.applications[APPS.KRATOS_EXTERNAL_IDP_INTEGRATOR].set_config(
-        {"issuer_url": ext_idp_service, "provider_id": "Dex"}
-    )
+    await ops_test.model.applications[APPS.KRATOS_EXTERNAL_IDP_INTEGRATOR].set_config({
+        "issuer_url": ext_idp_service,
+        "provider_id": "Dex",
+    })
 
     await ops_test.model.wait_for_idle(
         raise_on_blocked=False,
