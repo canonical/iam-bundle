@@ -103,6 +103,7 @@ name = "oauth_tools"
 version = "0.0.1"
 description = "A collection of tools useful for testing oauth interface"
 requires-python = ">=3.7"
+dynamic = ["dependencies"]
 
 [project.urls]
 "Homepage" = "https://github.com/canonical/iam-bundle"
@@ -112,6 +113,9 @@ requires-python = ">=3.7"
 where = ["."]
 include = ["oauth_tools*"]
 namespaces = false
+
+[tool.setuptools.dynamic]
+dependencies = {file = ["oauth_tools/requirements.txt"]}
 
 [tool.setuptools.package-data]
 oauth_tools = ["*.yaml"]
