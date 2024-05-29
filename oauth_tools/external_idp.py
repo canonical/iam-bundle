@@ -28,30 +28,35 @@ from oauth_tools.constants import (
 logger = logging.getLogger(__name__)
 
 
-class ExternalIdpManager(abc.ABC):
+class ExternalIdpService(abc.ABC):
     """Abstract class for managing lifecycle for an external IdP."""
 
     @property
+    @abc.abstractmethod
     def client_id(self) -> str:
         """The client_id of a registered client."""
         ...
 
     @property
+    @abc.abstractmethod
     def client_secret(self) -> str:
         """The client_sercet of a registered client."""
         ...
 
     @property
+    @abc.abstractmethod
     def user_email(self) -> str:
         """The test user's email."""
         ...
 
     @property
+    @abc.abstractmethod
     def user_password(self) -> str:
         """The test user's password."""
         ...
 
     @property
+    @abc.abstractmethod
     def issuer_url(self) -> str:
         """The provider's issuer URL."""
         ...
@@ -59,11 +64,6 @@ class ExternalIdpManager(abc.ABC):
     @abc.abstractmethod
     def create_idp_service(self) -> None:
         """Deploy and configure the idp service."""
-        ...
-
-    @abc.abstractmethod
-    def wait_until_is_ready(self) -> None:
-        """Wait until the idp service is ready."""
         ...
 
     @abc.abstractmethod
@@ -77,7 +77,7 @@ class ExternalIdpManager(abc.ABC):
         ...
 
 
-class DexIdpManager(ExternalIdpManager):
+class DexIdpService(ExternalIdpService):
     """Class for managing lifecycle for an external Dex IdP."""
 
     client_id = DEX_CLIENT_ID
@@ -86,9 +86,7 @@ class DexIdpManager(ExternalIdpManager):
     user_password = EXTERNAL_USER_PASSWORD
     _namespace = "dex"
 
-    def __init__(self, ops_test: OpsTest, client: Optional[Client] = None):
-        # Deploys the identity provider
-        self._ops_test = ops_test
+    def __init__(self, client: Optional[Client] = None):
         if not client:
             client = Client(config=KubeConfig.from_file(KUBECONFIG), field_manager="dex-test")
         self._client = client
@@ -151,18 +149,23 @@ class DexIdpManager(ExternalIdpManager):
         self._restart_dex()
 
         logger.info("Waiting for dex to be ready")
-        self.wait_until_is_ready()
+        self._wait_until_is_ready()
 
-    def _wait_until_is_ready(self) -> None:
+    def __wait_until_is_ready(self) -> None:
         for pod in self._client.list(Pod, namespace=self.namespace, labels={"app": "dex"}):
             # Some pods may be deleted, if we are restarting
             try:
                 self._client.wait(
-                    Pod, pod.metadata.name, for_conditions=["Ready", "Deleted"], namespace=self.namespace
+                    Pod,
+                    pod.metadata.name,
+                    for_conditions=["Ready", "Deleted"],
+                    namespace=self.namespace,
                 )
             except ObjectDeleted:
                 pass
-        self._client.wait(Deployment, "dex", namespace=self.namespace, for_conditions=["Available"])
+        self._client.wait(
+            Deployment, "dex", namespace=self.namespace, for_conditions=["Available"]
+        )
 
         issuer_url = self.issuer_url
         resp = requests.get(join(issuer_url, ".well-known/openid-configuration"))
@@ -181,18 +184,16 @@ class DexIdpManager(ExternalIdpManager):
         self._redirect_uri = redirect_uri
         self._apply_dex_resources()
 
-    def wait_until_is_ready(self) -> None:
+    def _wait_until_is_ready(self) -> None:
         """Wait until the dex service is ready."""
         try:
-            self._wait_until_is_ready()
+            self.__wait_until_is_ready()
         except (RuntimeError, RequestException):
             sleep(3)
-            self._wait_until_is_ready()
+            self.__wait_until_is_ready()
 
     def remove_idp_service(self) -> None:
         """Remove and clean up the dex manifests."""
-        if self._ops_test.keep_model:
-            return
         logger.info("Deleting dex resources")
         for obj in self._get_dex_manifest():
             try:

@@ -6,7 +6,6 @@ import collections
 import inspect
 import logging
 import os
-import re
 from os.path import join
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
@@ -21,11 +20,16 @@ from integration.auth_utils import (
     get_authorization_url,
     userinfo_request,
 )
-from integration.dex import apply_dex_resources
 from lightkube import Client
-from playwright.async_api import expect
 from playwright.async_api._generated import Page
 from pytest_operator.plugin import OpsTest
+
+from oauth_tools.external_idp import ExternalIdpService
+from oauth_tools.oauth_helpers import (
+    complete_auth_code_login,
+    complete_device_login,
+    deploy_identity_bundle,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -76,7 +80,9 @@ async def get_reverse_proxy_app_url(
 
 @pytest.mark.skip_if_deployed
 @pytest.mark.abort_on_fail
-async def test_render_and_deploy_bundle(ops_test: OpsTest, ext_idp_service: str) -> None:
+async def test_render_and_deploy_bundle(
+    ops_test: OpsTest, ext_idp_service: ExternalIdpService
+) -> None:
     """Render the bundle from template and deploy using ops_test."""
     await ops_test.model.set_config({"logging-config": "<root>=WARNING; unit=DEBUG"})
 
@@ -91,20 +97,8 @@ async def test_render_and_deploy_bundle(ops_test: OpsTest, ext_idp_service: str)
 
     logger.info(f"Rendered bundle {str(rendered_bundle)}")
 
-    await ops_test.run("juju", "deploy", rendered_bundle, "--trust")
-
-    await ops_test.model.applications[APPS.KRATOS_EXTERNAL_IDP_INTEGRATOR].set_config({
-        "client_id": DEX_CLIENT_ID,
-        "client_secret": DEX_CLIENT_SECRET,
-        "provider": "generic",
-        "issuer_url": "https://path/to/dex",
-        "scope": "profile email",
-    })
-
-    await ops_test.model.wait_for_idle(
-        raise_on_blocked=False,
-        status="active",
-        timeout=2000,
+    await deploy_identity_bundle(
+        ops_test, bundle_url=str(rendered_bundle), ext_idp_service=ext_idp_service
     )
 
 
@@ -132,10 +126,12 @@ async def test_kratos_is_up(ops_test: OpsTest) -> None:
 
 @pytest.mark.abort_on_fail
 async def test_kratos_external_idp_redirect_url(
-    ops_test: OpsTest, client: Client, ext_idp_service: str
+    ops_test: OpsTest,
+    ext_idp_service: ExternalIdpService,
+    kratos_external_idp_integrator_app_name: str,
 ) -> None:
     await ops_test.model.applications[APPS.KRATOS_EXTERNAL_IDP_INTEGRATOR].set_config({
-        "issuer_url": ext_idp_service,
+        "issuer_url": ext_idp_service.issuer_url,
         "provider_id": "Dex",
     })
 
@@ -155,12 +151,7 @@ async def test_kratos_external_idp_redirect_url(
     action_output = await get_redirect_uri_action.wait()
     assert "redirect-uri" in action_output.results
 
-    apply_dex_resources(
-        client,
-        client_id=DEX_CLIENT_ID,
-        client_secret=DEX_CLIENT_SECRET,
-        redirect_uri=action_output.results["redirect-uri"],
-    )
+    ext_idp_service.update_redirect_uri(action_output.results["redirect-uri"])
 
 
 @pytest.mark.skip_if_deployed
@@ -241,7 +232,9 @@ async def test_hydra_scale_up(ops_test: OpsTest) -> None:
     )
 
 
-async def test_create_hydra_client(ops_test: OpsTest, ext_idp_service: str) -> None:
+async def test_create_hydra_client(
+    ops_test: OpsTest, ext_idp_service: ExternalIdpService, hydra_app_name: str
+) -> None:
     """Register a client on hydra."""
     app = ops_test.model.applications[APPS.HYDRA]
     action = await app.units[0].run_action(
@@ -259,10 +252,10 @@ async def test_create_hydra_client(ops_test: OpsTest, ext_idp_service: str) -> N
 
 async def test_authorization_code_flow(
     ops_test: OpsTest,
-    ext_idp_service: str,
+    page: Page,
+    ext_idp_service: ExternalIdpService,
     external_user_email: str,
     external_user_password: str,
-    page: Page,
 ) -> None:
     # This is a hack, we just need a server to be running on the redirect_uri
     # so that when we get redirected there we don't get a connection_refused
@@ -285,26 +278,7 @@ async def test_authorization_code_flow(
     # Go to hydra authorization endpoint
     await page.goto(get_authorization_url(hydra_url, client_id, redirect_uri))
 
-    expected_url = join(
-        await get_reverse_proxy_app_url(
-            ops_test, APPS.TRAEFIK_PUBLIC, "identity-platform-login-ui-operator"
-        ),
-        "ui/login",
-    )
-    await expect(page).to_have_url(re.compile(rf"{expected_url}*"))
-
-    # Choose provider
-    async with page.expect_navigation():
-        await page.get_by_role("button", name="Dex").click()
-
-    await expect(page).to_have_url(re.compile(rf"{ext_idp_service}*"))
-
-    # Login
-    await page.get_by_placeholder("email address").click()
-    await page.get_by_placeholder("email address").fill(external_user_email)
-    await page.get_by_placeholder("password").click()
-    await page.get_by_placeholder("password").fill(external_user_password)
-    await page.get_by_role("button", name="Login").click()
+    await complete_auth_code_login(page, ops_test, ext_idp_service=ext_idp_service)
 
     await page.wait_for_url(redirect_uri + "?*")
 
@@ -353,10 +327,10 @@ async def test_client_credentials_flow(
 
 async def test_device_flow(
     ops_test: OpsTest,
-    ext_idp_service: str,
+    page: Page,
+    ext_idp_service: ExternalIdpService,
     external_user_email: str,
     external_user_password: str,
-    page: Page,
 ) -> None:
     scopes = ["openid", "profile", "email", "offline_access"]
     app = ops_test.model.applications[APPS.HYDRA]
@@ -390,47 +364,13 @@ async def test_device_flow(
     assert token_resp.status_code == 400
     assert token_resp.json()["error"] == "authorization_pending"
 
-    # Go to verification URL
-    await page.goto(device_auth_resp["verification_uri_complete"])
-    expected_url = join(
-        await get_reverse_proxy_app_url(
-            ops_test, APPS.TRAEFIK_PUBLIC, "identity-platform-login-ui-operator"
-        ),
-        "ui/device_code",
+    # Complete browser flow
+    await complete_device_login(
+        page,
+        ops_test,
+        device_auth_resp["verification_uri_complete"],
+        ext_idp_service=ext_idp_service,
     )
-    await expect(page).to_have_url(re.compile(rf"{expected_url}*"))
-
-    async with page.expect_navigation():
-        await page.get_by_role("button", name="Next").click()
-
-    expected_url = join(
-        await get_reverse_proxy_app_url(
-            ops_test, APPS.TRAEFIK_PUBLIC, "identity-platform-login-ui-operator"
-        ),
-        "ui/login",
-    )
-    await expect(page).to_have_url(re.compile(rf"{expected_url}*"))
-
-    # Choose provider
-    async with page.expect_navigation():
-        await page.get_by_role("button", name="Dex").click()
-
-    await expect(page).to_have_url(re.compile(rf"{ext_idp_service}*"))
-
-    # Login
-    await page.get_by_placeholder("email address").click()
-    await page.get_by_placeholder("email address").fill(external_user_email)
-    await page.get_by_placeholder("password").click()
-    await page.get_by_placeholder("password").fill(external_user_password)
-    await page.get_by_role("button", name="Login").click()
-
-    expected_url = join(
-        await get_reverse_proxy_app_url(
-            ops_test, APPS.TRAEFIK_PUBLIC, "identity-platform-login-ui-operator"
-        ),
-        "ui/device_complete",
-    )
-    await page.wait_for_url(expected_url + "?*")
 
     # Exchange device code for tokens
     token_resp = device_token_request(

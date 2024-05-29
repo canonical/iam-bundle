@@ -1,18 +1,89 @@
+#!/usr/bin/env python3
 # Copyright 2024 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-# Dependencies for the oauth integration test
+import logging
 import os
-from typing import Any, AsyncGenerator, Callable, Coroutine, Dict
+from typing import Any, AsyncGenerator, Callable, Coroutine, Dict, Generator
 
 import pytest
+from lightkube import Client, KubeConfig
 from playwright.async_api import async_playwright
 from playwright.async_api._generated import Browser, BrowserContext, BrowserType, Page
 from playwright.async_api._generated import Playwright as AsyncPlaywright
+from pytest_operator.plugin import OpsTest
+
+from oauth_tools.constants import (
+    APPS,
+    DEX_CLIENT_ID,
+    DEX_CLIENT_SECRET,
+    EXTERNAL_USER_EMAIL,
+    EXTERNAL_USER_PASSWORD,
+)
+from oauth_tools.external_idp import DexIdpService
+
+logger = logging.getLogger(__name__)
+KUBECONFIG = os.environ.get("TESTING_KUBECONFIG", "~/.kube/config")
+
+
+@pytest.fixture(scope="session")
+def client() -> Client:
+    return Client(config=KubeConfig.from_file(KUBECONFIG), field_manager="dex-test")
+
+
+@pytest.fixture(scope="module")
+def ext_idp_service(ops_test: OpsTest, client: Client) -> Generator[DexIdpService, None, None]:
+    # Use ops-lib-manifests?
+    ext_idp_manager = DexIdpService(client=client)
+    try:
+        logger.info("Deploying dex resources")
+
+        yield ext_idp_manager
+    finally:
+        if ops_test.keep_model:
+            return
+        logger.info("Deleting dex resources")
+        ext_idp_manager.remove_idp_service()
+
+
+@pytest.fixture
+def dex_client_id() -> str:
+    return DEX_CLIENT_ID
+
+
+@pytest.fixture
+def dex_client_secret() -> str:
+    return DEX_CLIENT_SECRET
+
+
+@pytest.fixture
+def external_user_email() -> str:
+    return EXTERNAL_USER_EMAIL
+
+
+@pytest.fixture
+def external_user_password() -> str:
+    return EXTERNAL_USER_PASSWORD
+
+
+@pytest.fixture
+def hydra_app_name() -> str:
+    return APPS.HYDRA
+
+
+@pytest.fixture
+def public_traefik_app_name() -> str:
+    return APPS.TRAEFIK_PUBLIC
+
+
+@pytest.fixture
+def self_signed_certificates_app_name() -> str:
+    return APPS.SELF_SIGNED_CERTIFICATES
 
 
 # To learn more about playwright for python see https://github.com/microsoft/playwright-python.
-# Fixtures are accessible from https://github.com/microsoft/playwright-python/blob/main/tests/async/conftest.py.
+# Fixtures are accessible from
+# https://github.com/microsoft/playwright-python/blob/main/tests/async/conftest.py.
 @pytest.fixture(scope="module")
 def launch_arguments(pytestconfig: Any) -> Dict:
     return {
