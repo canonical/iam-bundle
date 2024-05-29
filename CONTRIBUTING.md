@@ -10,9 +10,9 @@ contributing to the Identity Platform bundle.
   explaining your use case.
 - All enhancements require review before being merged. Code review typically
   examines
-    - code quality
-    - test functionality
-    - test coverage
+  - code quality
+  - test functionality
+  - test coverage
 - Please help us out in ensuring easy to review branches by rebasing your pull
   request branch onto
   the `main` branch. This also avoids merge commits and creates a linear Git
@@ -23,8 +23,8 @@ contributing to the Identity Platform bundle.
 You can use the environments created by `tox` for test development:
 
 ```shell
-$ tox --notest -e integration
-$ source .tox/integration/bin/activate
+tox --notest -e integration
+source .tox/integration/bin/activate
 ```
 
 ### Debugging Playwright tests
@@ -33,27 +33,27 @@ There are some test cases depending
 on [Playwright](https://playwright.dev/python/) to run. To debug the Playwright
 test cases:
 
-```
-$ PWDEBUG=1 PYTHONPATH=. pytest
+```shell
+PWDEBUG=1 PYTHONPATH=. pytest
 ```
 
 ## Code style and quality enforcement
 
 ```shell
-$ tox -e fmt           # update your code according to linting rules
-$ tox -e lint          # code style
+tox -e fmt           # update your code according to linting rules
+tox -e lint          # code style
 ```
 
 ## Testing the bundle
 
 ```shell
-$ tox -e integration   # integration test
+tox -e integration   # integration test
 ```
 
 In order to run the integration test against a deployed bundle, run
 
 ```shell
-$ tox -e integration -- --model=<model name> --keep-models --no-deploy
+tox -e integration -- --model=<model name> --keep-models --no-deploy
 ```
 
 ## Deploy the bundle locally
@@ -61,28 +61,28 @@ $ tox -e integration -- --model=<model name> --keep-models --no-deploy
 Render the bundle file with desired channel:
 
 ```shell
-$ tox -e render-<channel, e.g. edge>
+tox -e render-<channel, e.g. edge>
 ```
 
 Render the bundle file with desired channel and version:
 
 ```shell
-$ VERSION=<version, e.g. 0.1> tox -e render-<channel, e.g. edge>
+VERSION=<version, e.g. 0.1> tox -e render-<channel, e.g. edge>
 ```
 
 or directly run the utility:
 
 ```shell
-$ ./bundle_renderer.py bundle.yaml.j2 \
-    -o render-<channel>.yaml \
-    -c <channel> \
-    --variables <key1>=<val1>,<key2>=<val2>
+./bundle_renderer.py bundle.yaml.j2 \
+  -o render-<channel>.yaml \
+  -c <channel> \
+  --variables <key1>=<val1>,<key2>=<val2>
 ```
 
 Use the rendered bundle file to deploy the bundle locally:
 
 ```shell
-$ juju deploy ./bundle-<channel, e.g. edge>.yaml --trust
+juju deploy ./bundle-<channel, e.g. edge>.yaml --trust
 ```
 
 To deploy the bundle with a locally built charm and OCI image, update the bundle

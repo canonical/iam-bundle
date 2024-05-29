@@ -19,6 +19,8 @@ applications:
     scale: 1
     series: jammy
     trust: true
+    resources:
+      oci-image: ghcr.io/canonical/kratos:1.0.0
   kratos-external-idp-integrator:
     charm: kratos-external-idp-integrator
     channel: {{ channel|default('edge', true) }}

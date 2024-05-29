@@ -1,9 +1,9 @@
 # Copyright 2024 Canonical Ltd.
 # See LICENSE file for licensing details.
 
+import collections
 import os
 from pathlib import Path
-import collections
 
 DEX_MANIFESTS = Path(__file__).parent / "dex.yaml"
 KUBECONFIG = os.environ.get("TESTING_KUBECONFIG", "~/.kube/config")

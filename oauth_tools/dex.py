@@ -7,20 +7,15 @@ from os.path import join
 from time import sleep
 from typing import List
 
-from pytest_operator.plugin import OpsTest
+import requests
 from lightkube import Client, KubeConfig, codecs
 from lightkube.core.exceptions import ApiError, ObjectDeleted
 from lightkube.resources.apps_v1 import Deployment
-from lightkube.resources.core_v1 import Pod, Service, Namespace
-import requests
+from lightkube.resources.core_v1 import Namespace, Pod, Service
+from pytest_operator.plugin import OpsTest
 from requests.exceptions import RequestException
 
-from oauth_tools.constants import (
-    DEX_MANIFESTS,
-    DEX_CLIENT_ID,
-    DEX_CLIENT_SECRET,
-    KUBECONFIG,
-)
+from oauth_tools.constants import DEX_CLIENT_ID, DEX_CLIENT_SECRET, DEX_MANIFESTS, KUBECONFIG
 
 logger = logging.getLogger(__name__)
 

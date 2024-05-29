@@ -3,23 +3,23 @@
 # See LICENSE file for licensing details.
 
 import logging
-from os.path import join
 import re
+from os.path import join
 from typing import Dict, List, Optional
 
-from playwright.async_api._generated import BrowserContext, Page
 from playwright.async_api import expect
+from playwright.async_api._generated import BrowserContext, Page
 from pytest_operator.plugin import OpsTest
 
-from oauth_tools.dex import ExternalIdpManager
 from oauth_tools.constants import (
     APPS,
-    IDENTITY_BUNDLE,
-    EXTERNAL_USER_EMAIL,
-    EXTERNAL_USER_PASSWORD,
     DEX_CLIENT_ID,
     DEX_CLIENT_SECRET,
+    EXTERNAL_USER_EMAIL,
+    EXTERNAL_USER_PASSWORD,
+    IDENTITY_BUNDLE,
 )
+from oauth_tools.dex import ExternalIdpManager
 
 logger = logging.getLogger(__name__)
 
@@ -41,16 +41,14 @@ async def deploy_identity_bundle(ops_test: OpsTest, external_idp_manager: Extern
         trust=True,
     )
 
-    await ops_test.model.applications[APPS.KRATOS_EXTERNAL_IDP_INTEGRATOR].set_config(
-        {
-            "client_id": DEX_CLIENT_ID,
-            "client_secret": DEX_CLIENT_SECRET,
-            "provider": "generic",
-            "issuer_url": external_idp_manager.idp_service_url,
-            "scope": "profile email",
-            "provider_id": "Dex",
-        }
-    )
+    await ops_test.model.applications[APPS.KRATOS_EXTERNAL_IDP_INTEGRATOR].set_config({
+        "client_id": DEX_CLIENT_ID,
+        "client_secret": DEX_CLIENT_SECRET,
+        "provider": "generic",
+        "issuer_url": external_idp_manager.idp_service_url,
+        "scope": "profile email",
+        "provider_id": "Dex",
+    })
 
     await ops_test.model.wait_for_idle(
         raise_on_blocked=False,
