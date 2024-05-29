@@ -2,4 +2,4 @@
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-pytest_plugins = ["oauth_tools.conftest"]
+pytest_plugins = ["oauth_tools.fixtures"]
