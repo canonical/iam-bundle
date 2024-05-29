@@ -2,4 +2,4 @@
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-from oauth_tools.conftest import *  # noqa: F401, F403
+pytest_plugins = ["oauth_tools.conftest"]
