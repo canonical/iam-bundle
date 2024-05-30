@@ -72,8 +72,23 @@ def hydra_app_name() -> str:
 
 
 @pytest.fixture
+def kratos_app_name() -> str:
+    return APPS.KRATOS
+
+
+@pytest.fixture
+def kratos_external_idp_integrator_app_name() -> str:
+    return APPS.KRATOS_EXTERNAL_IDP_INTEGRATOR
+
+
+@pytest.fixture
 def public_traefik_app_name() -> str:
     return APPS.TRAEFIK_PUBLIC
+
+
+@pytest.fixture
+def admin_traefik_app_name() -> str:
+    return APPS.TRAEFIK_ADMIN
 
 
 @pytest.fixture

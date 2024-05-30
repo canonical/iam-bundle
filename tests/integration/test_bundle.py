@@ -2,7 +2,6 @@
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-import collections
 import inspect
 import logging
 import os
@@ -20,7 +19,6 @@ from integration.auth_utils import (
     get_authorization_url,
     userinfo_request,
 )
-from lightkube import Client
 from playwright.async_api._generated import Page
 from pytest_operator.plugin import OpsTest
 
@@ -32,21 +30,6 @@ from oauth_tools.oauth_helpers import (
 )
 
 logger = logging.getLogger(__name__)
-
-APPS = collections.namedtuple(
-    "Apps",
-    ["TRAEFIK_ADMIN", "TRAEFIK_PUBLIC", "HYDRA", "KRATOS", "KRATOS_EXTERNAL_IDP_INTEGRATOR"],
-)(
-    TRAEFIK_ADMIN="traefik-admin",
-    TRAEFIK_PUBLIC="traefik-public",
-    HYDRA="hydra",
-    KRATOS="kratos",
-    KRATOS_EXTERNAL_IDP_INTEGRATOR="kratos-external-idp-integrator",
-)
-
-
-DEX_CLIENT_ID = "client_id"
-DEX_CLIENT_SECRET = "client_secret"
 
 
 def get_this_script_dir() -> Path:
@@ -103,9 +86,11 @@ async def test_render_and_deploy_bundle(
 
 
 @pytest.mark.abort_on_fail
-async def test_hydra_is_up(ops_test: OpsTest) -> None:
+async def test_hydra_is_up(
+    ops_test: OpsTest, admin_traefik_app_name: str, hydra_app_name: str
+) -> None:
     """Check that hydra and its environment dependencies (e.g. the database) are responsive."""
-    hydra_url = await get_reverse_proxy_app_url(ops_test, APPS.TRAEFIK_ADMIN, APPS.HYDRA)
+    hydra_url = await get_reverse_proxy_app_url(ops_test, admin_traefik_app_name, hydra_app_name)
 
     health_check_url = join(hydra_url, "health/ready")
 
@@ -114,9 +99,11 @@ async def test_hydra_is_up(ops_test: OpsTest) -> None:
 
 
 @pytest.mark.abort_on_fail
-async def test_kratos_is_up(ops_test: OpsTest) -> None:
+async def test_kratos_is_up(
+    ops_test: OpsTest, admin_traefik_app_name: str, kratos_app_name: str
+) -> None:
     """Check that kratos and its environment dependencies (e.g. the database) are responsive."""
-    kratos_url = await get_reverse_proxy_app_url(ops_test, APPS.TRAEFIK_ADMIN, APPS.KRATOS)
+    kratos_url = await get_reverse_proxy_app_url(ops_test, admin_traefik_app_name, kratos_app_name)
 
     health_check_url = join(kratos_url, "admin/health/ready")
 
@@ -130,7 +117,7 @@ async def test_kratos_external_idp_redirect_url(
     ext_idp_service: ExternalIdpService,
     kratos_external_idp_integrator_app_name: str,
 ) -> None:
-    await ops_test.model.applications[APPS.KRATOS_EXTERNAL_IDP_INTEGRATOR].set_config({
+    await ops_test.model.applications[kratos_external_idp_integrator_app_name].set_config({
         "issuer_url": ext_idp_service.issuer_url,
         "provider_id": "Dex",
     })
@@ -143,7 +130,7 @@ async def test_kratos_external_idp_redirect_url(
     )
 
     get_redirect_uri_action = (
-        await ops_test.model.applications[APPS.KRATOS_EXTERNAL_IDP_INTEGRATOR]
+        await ops_test.model.applications[kratos_external_idp_integrator_app_name]
         .units[0]
         .run_action("get-redirect-uri")
     )
@@ -155,7 +142,9 @@ async def test_kratos_external_idp_redirect_url(
 
 
 @pytest.mark.skip_if_deployed
-async def test_multiple_kratos_external_idp_integrators(ops_test: OpsTest) -> None:
+async def test_multiple_kratos_external_idp_integrators(
+    ops_test: OpsTest, kratos_app_name: str
+) -> None:
     """Deploy an additional external idp integrator charm and test the action.
 
     The purpose of this test is to check that kratos allows for integration
@@ -189,7 +178,7 @@ async def test_multiple_kratos_external_idp_integrators(ops_test: OpsTest) -> No
         timeout=360,
     )
     assert ops_test.model.applications[additional_idp_name].units[0].workload_status == "active"
-    assert ops_test.model.applications[APPS.KRATOS].units[0].workload_status == "active"
+    assert ops_test.model.applications[kratos_app_name].units[0].workload_status == "active"
 
     # Check that the redirect_uri is returned by the action
     get_redirect_uri_action = (
@@ -202,14 +191,14 @@ async def test_multiple_kratos_external_idp_integrators(ops_test: OpsTest) -> No
     assert "redirect-uri" in action_output.results
 
 
-async def test_kratos_scale_up(ops_test: OpsTest) -> None:
+async def test_kratos_scale_up(ops_test: OpsTest, kratos_app_name: str) -> None:
     """Check that kratos works after it is scaled up."""
-    app = ops_test.model.applications[APPS.KRATOS]
+    app = ops_test.model.applications[kratos_app_name]
 
     await app.scale(3)
 
     await ops_test.model.wait_for_idle(
-        apps=[APPS.KRATOS],
+        apps=[kratos_app_name],
         raise_on_blocked=True,
         status="active",
         timeout=2000,
@@ -217,14 +206,14 @@ async def test_kratos_scale_up(ops_test: OpsTest) -> None:
     )
 
 
-async def test_hydra_scale_up(ops_test: OpsTest) -> None:
+async def test_hydra_scale_up(ops_test: OpsTest, hydra_app_name: str) -> None:
     """Check that hydra works after it is scaled up."""
-    app = ops_test.model.applications[APPS.HYDRA]
+    app = ops_test.model.applications[hydra_app_name]
 
     await app.scale(3)
 
     await ops_test.model.wait_for_idle(
-        apps=[APPS.HYDRA],
+        apps=[hydra_app_name],
         raise_on_blocked=True,
         status="active",
         timeout=2000,
@@ -236,7 +225,7 @@ async def test_create_hydra_client(
     ops_test: OpsTest, ext_idp_service: ExternalIdpService, hydra_app_name: str
 ) -> None:
     """Register a client on hydra."""
-    app = ops_test.model.applications[APPS.HYDRA]
+    app = ops_test.model.applications[hydra_app_name]
     action = await app.units[0].run_action(
         "create-oauth-client",
         **{
@@ -255,13 +244,14 @@ async def test_authorization_code_flow(
     page: Page,
     ext_idp_service: ExternalIdpService,
     external_user_email: str,
-    external_user_password: str,
+    hydra_app_name: str,
+    public_traefik_app_name: str,
 ) -> None:
     # This is a hack, we just need a server to be running on the redirect_uri
     # so that when we get redirected there we don't get a connection_refused
     # error.
-    redirect_uri = await get_reverse_proxy_app_url(ops_test, APPS.TRAEFIK_PUBLIC, "dummy")
-    app = ops_test.model.applications[APPS.HYDRA]
+    redirect_uri = await get_reverse_proxy_app_url(ops_test, public_traefik_app_name, "dummy")
+    app = ops_test.model.applications[hydra_app_name]
     action = await app.units[0].run_action(
         "create-oauth-client",
         **{
@@ -273,7 +263,7 @@ async def test_authorization_code_flow(
     client_id = res["client-id"]
     client_secret = res["client-secret"]
 
-    hydra_url = await get_reverse_proxy_app_url(ops_test, APPS.TRAEFIK_PUBLIC, APPS.HYDRA)
+    hydra_url = await get_reverse_proxy_app_url(ops_test, public_traefik_app_name, hydra_app_name)
 
     # Go to hydra authorization endpoint
     await page.goto(get_authorization_url(hydra_url, client_id, redirect_uri))
@@ -306,8 +296,10 @@ async def test_authorization_code_flow(
 
 async def test_client_credentials_flow(
     ops_test: OpsTest,
+    hydra_app_name: str,
+    public_traefik_app_name: str,
 ) -> None:
-    app = ops_test.model.applications[APPS.HYDRA]
+    app = ops_test.model.applications[hydra_app_name]
     action = await app.units[0].run_action(
         "create-oauth-client",
         **{
@@ -318,7 +310,7 @@ async def test_client_credentials_flow(
     client_id = res["client-id"]
     client_secret = res["client-secret"]
 
-    hydra_url = await get_reverse_proxy_app_url(ops_test, APPS.TRAEFIK_PUBLIC, APPS.HYDRA)
+    hydra_url = await get_reverse_proxy_app_url(ops_test, public_traefik_app_name, hydra_app_name)
 
     resp = client_credentials_grant_request(hydra_url, client_id, client_secret)
 
@@ -330,10 +322,11 @@ async def test_device_flow(
     page: Page,
     ext_idp_service: ExternalIdpService,
     external_user_email: str,
-    external_user_password: str,
+    hydra_app_name: str,
+    public_traefik_app_name: str,
 ) -> None:
     scopes = ["openid", "profile", "email", "offline_access"]
-    app = ops_test.model.applications[APPS.HYDRA]
+    app = ops_test.model.applications[hydra_app_name]
     action = await app.units[0].run_action(
         "create-oauth-client",
         **{
@@ -345,7 +338,7 @@ async def test_device_flow(
     client_id = res["client-id"]
     client_secret = res["client-secret"]
 
-    hydra_url = await get_reverse_proxy_app_url(ops_test, APPS.TRAEFIK_PUBLIC, APPS.HYDRA)
+    hydra_url = await get_reverse_proxy_app_url(ops_test, public_traefik_app_name, hydra_app_name)
 
     # Make the device auth request
     auth_resp = device_auth_request(hydra_url, client_id, client_secret, scope=" ".join(scopes))

@@ -13,7 +13,6 @@ from lightkube import Client, KubeConfig, codecs
 from lightkube.core.exceptions import ApiError, ObjectDeleted
 from lightkube.resources.apps_v1 import Deployment
 from lightkube.resources.core_v1 import Namespace, Pod, Service
-from pytest_operator.plugin import OpsTest
 from requests.exceptions import RequestException
 
 from oauth_tools.constants import (
