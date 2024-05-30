@@ -57,6 +57,7 @@ async def deploy_identity_bundle(
     await ops_test.run(*deploy_cmd)
 
     # Wait for apps to go active, kratos_external_idp_integrator needs config to unblock
+    logger.info("Waiting for the identity platform to deploy")
     await ops_test.model.wait_for_idle(
         [getattr(APPS, k) for k in APPS._fields if k != "KRATOS_EXTERNAL_IDP_INTEGRATOR"],
         raise_on_blocked=False,
@@ -67,6 +68,7 @@ async def deploy_identity_bundle(
     if not ext_idp_service:
         return
 
+    logger.info("Configuring the identity platform")
     await ops_test.model.applications[APPS.KRATOS_EXTERNAL_IDP_INTEGRATOR].set_config({
         "client_id": ext_idp_service.client_id,
         "client_secret": ext_idp_service.client_secret,
@@ -90,6 +92,7 @@ async def deploy_identity_bundle(
     action_output = await get_redirect_uri_action.wait()
     assert "redirect-uri" in action_output.results
 
+    logger.info("Configuring the external provider")
     ext_idp_service.update_redirect_uri(redirect_uri=action_output.results["redirect-uri"])
 
 
@@ -172,10 +175,12 @@ async def complete_auth_code_login(
         ),
         "ui/login",
     )
+    logger.info("Choose external provider")
     await expect(page).to_have_url(re.compile(rf"{expected_url}*"))
     async with page.expect_navigation():
         await page.get_by_role("button", name="Dex").click()
 
+    logger.info("Completing the login flow on the external provider")
     await ext_idp_service.complete_user_login(page)
 
 
@@ -202,11 +207,13 @@ async def complete_device_login(
     )
     await expect(page).to_have_url(re.compile(rf"{expected_url}*"))
 
+    logger.info("Accepting the user code")
     async with page.expect_navigation():
         await page.get_by_role("button", name="Next").click()
 
     await complete_auth_code_login(page, ops_test, ext_idp_service=ext_idp_service)
 
+    logger.info("Device login flow is complete")
     expected_url = join(
         await get_reverse_proxy_app_url(
             ops_test, APPS.TRAEFIK_PUBLIC, "identity-platform-login-ui-operator"

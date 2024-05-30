@@ -204,6 +204,7 @@ class DexIdpService(ExternalIdpService):
 
     async def complete_user_login(self, page: Page) -> None:
         """Get a page on the IDP login page and login the user."""
+        logger.info("Signing in to dex")
         await expect(page).to_have_url(re.compile(rf"{self.issuer_url}*"))
         await page.get_by_placeholder("email address").click()
         await page.get_by_placeholder("email address").fill(self.user_email)
