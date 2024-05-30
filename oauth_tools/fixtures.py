@@ -27,7 +27,7 @@ def client() -> Client:
 
 @pytest.fixture(scope="module")
 def ext_idp_service(ops_test: OpsTest, client: Client) -> Generator[DexIdpService, None, None]:
-    # Use ops-lib-manifests?
+    """Deploy and manage the lifecycle of an Dex service."""
     ext_idp_manager = DexIdpService(client=client)
     try:
         logger.info("Deploying dex resources")

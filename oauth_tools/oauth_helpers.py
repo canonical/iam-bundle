@@ -20,7 +20,13 @@ logger = logging.getLogger(__name__)
 async def get_reverse_proxy_app_url(
     ops_test: OpsTest, ingress_app_name: str, app_name: str
 ) -> str:
-    """Get the address of a proxied application."""
+    """Get the address of a proxied application.
+
+    Args:
+        ops_test (OpsTest): The ops_test fixture.
+        ingress_app_name (str): The ingress app's name.
+        app_name (str): The app's name.
+    """
     status = await ops_test.model.get_status()  # noqa: F821
     address = status["applications"][ingress_app_name]["public-address"]
     return f"https://{address}/{ops_test.model.name}-{app_name}/"
@@ -32,7 +38,14 @@ async def deploy_identity_bundle(
     bundle_channel: Optional[str] = None,
     ext_idp_service: Optional[ExternalIdpService] = None,
 ):
-    """Helper function for deploying and configuring the identity bundle and its dependencies."""
+    """Deploy and configure the identity bundle and its dependencies.
+
+    Args:
+        ops_test (OpsTest): The ops_test fixture.
+        bundle_url (str): The identity platform bundle's name on charmhub or a path to the bundle.
+        bundle_channel (str): The charmhub channel to use, not needed deploying the bundle from a local Path.
+        ext_idp_service (ExternalIdpService): The ExternalIdpService.
+    """
     if ext_idp_service and not isinstance(ext_idp_service, ExternalIdpService):
         raise ValueError(
             f"Invalid ext_idp_service type: {type(ext_idp_service)}, MUST be ExternalIdpManager or None"
@@ -84,22 +97,32 @@ async def clean_up_identity_bundle(
     ops_test: OpsTest,
     ext_idp_service: Optional[ExternalIdpService] = None,
 ):
-    """Helper function for cleaning up the identity bundle and its dependencies."""
-    for app in APPS.keys():
+    """Clean up the identity bundle and its dependencies.
+
+    Args:
+        ops_test (OpsTest): The ops_test fixture.
+        ext_idp_service (ExternalIdpService): The ExternalIdpService.
+    """
+    for app in APPS:
         await ops_test.model.remove_application(app, destroy_storage=True, no_wait=True)
     if ext_idp_service:
         ext_idp_service.remove_idp_service()
 
 
-async def access_application_login_page(page: Page, url: str, redirect_login_url: str = ""):
-    """Convenience function for navigating the browser to the login page.
+async def access_application_login_page(
+    page: Page, url: str, redirect_login_url: Optional[str] = None
+):
+    """Navigate the browser to the login page.
 
-    Usage:
-        If the url of the application redirects to a login page, pass the application's url as url,
-        and a pattern string for the login page as redirect_login_url.
+    If the url of the application redirects to a login page, pass the application's url as url,
+    and a pattern string for the login page as redirect_login_url.
+    Otherwise pass the url of the application's login page as url, and leave redirect_login_url
+    empty.
 
-        Otherwise pass the url of the application's login page as url, and leave redirect_login_url
-        empty.
+    Args:
+        page (page): The page fixture.
+        url (str): The url to go to.
+        redirect_login_url (str): The redirect to which the browser will get redirected to.
     """
     await page.goto(url)
     if redirect_login_url:
@@ -107,13 +130,23 @@ async def access_application_login_page(page: Page, url: str, redirect_login_url
 
 
 async def click_on_sign_in_button_by_text(page: Page, text: str):
-    """Convenience function for retrieving the Oauth Sign In button by its displayed text."""
+    """Find and click on a button by its displayed text.
+
+    Args:
+        page (page): The page fixture.
+        text (str): The button's text to search for.
+    """
     async with page.expect_navigation():
         await page.get_by_text(text).click()
 
 
 async def click_on_sign_in_button_by_alt_text(page: Page, alt_text: str):
-    """Convenience function for retrieving the Oauth Sign In button by the alt text."""
+    """Retrieve a button by its alt text.
+
+    Args:
+        page (page): The page fixture.
+        alt_text (str): The button's alt_text to search for.
+    """
     async with page.expect_navigation():
         await page.get_by_alt_text(alt_text).click()
 
@@ -121,7 +154,13 @@ async def click_on_sign_in_button_by_alt_text(page: Page, alt_text: str):
 async def complete_auth_code_login(
     page: Page, ops_test: OpsTest, ext_idp_service: ExternalIdpService
 ) -> None:
-    """Convenience function for navigating the external identity provider's user interface."""
+    """Take a page that is in the identity-platform's login page and login the user.
+
+    Args:
+        page (page): The page fixture.
+        ops_test (OpsTest): The ops_test fixture.
+        ext_idp_service (ExternalIdpService): The ExternalIdpService.
+    """
     if not isinstance(ext_idp_service, ExternalIdpService):
         raise ValueError(
             f"Invalid ext_idp_service type: {type(ext_idp_service)}, MUST be ExternalIdpManager or None"
@@ -146,7 +185,14 @@ async def complete_device_login(
     verification_uri_complete: str,
     ext_idp_service: ExternalIdpService,
 ) -> None:
-    # Go to verification URL
+    """Perform the device code login flow.
+
+    Args:
+        page (page): The page fixture.
+        ops_test (OpsTest): The ops_test fixture.
+        verification_uri_complete (str): The `verification_uri_complete` the user is shown.
+        ext_idp_service (ExternalIdpService): The ExternalIdpService.
+    """
     await page.goto(verification_uri_complete)
     expected_url = join(
         await get_reverse_proxy_app_url(
@@ -171,14 +217,24 @@ async def complete_device_login(
 
 
 async def verify_page_loads(page: Page, url: str):
-    """Convenience function for verifying that the correct url has been loaded."""
+    """Verify that the correct url has been loaded.
+
+    Args:
+        page (page): The page fixture.
+        url (str): The url to go to.
+    """
     await page.wait_for_url(url)
 
 
 async def get_cookie_from_browser_by_name(
     browser_context: BrowserContext, name: str
 ) -> Optional[str]:
-    """Convenience function for retrieving a cookie."""
+    """Retrieve a cookie by name.
+
+    Args:
+        browser_context (BrowserContext): The browser_context fixture.
+        name (str): The cookie name.
+    """
     cookies = await browser_context.cookies()
     for cookie in cookies:
         if cookie["name"] == name:
@@ -187,7 +243,12 @@ async def get_cookie_from_browser_by_name(
 
 
 async def get_cookies_from_browser_by_url(browser_context: BrowserContext, url: str) -> List[Dict]:
-    """Convenience function for retrieving cookies belonging to a domain."""
+    """Retrieve  all cookies belonging to a domain.
+
+    Args:
+        browser_context (BrowserContext): The browser_context fixture.
+        url (str): The domain base url.
+    """
     # see structure of returned dictionaries at
     # https://playwright.dev/docs/api/class-browsercontext#browser-context-cookies
     cookies = await browser_context.cookies(url)
