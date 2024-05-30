@@ -12,7 +12,7 @@ from playwright.async_api._generated import BrowserContext, Page
 from pytest_operator.plugin import OpsTest
 
 from oauth_tools.constants import APPS
-from oauth_tools.external_idp import DexIdpService, ExternalIdpService
+from oauth_tools.external_idp import ExternalIdpService
 
 logger = logging.getLogger(__name__)
 
@@ -119,12 +119,10 @@ async def click_on_sign_in_button_by_alt_text(page: Page, alt_text: str):
 
 
 async def complete_auth_code_login(
-    page: Page, ops_test: OpsTest, ext_idp_service: Optional[ExternalIdpService] = None
+    page: Page, ops_test: OpsTest, ext_idp_service: ExternalIdpService
 ) -> None:
     """Convenience function for navigating the external identity provider's user interface."""
-    if not ext_idp_service:
-        ext_idp_service = DexIdpService(ops_test=ops_test)
-    elif not isinstance(ext_idp_service, ExternalIdpService):
+    if not isinstance(ext_idp_service, ExternalIdpService):
         raise ValueError(
             f"Invalid ext_idp_service type: {type(ext_idp_service)}, MUST be ExternalIdpManager or None"
         )
@@ -139,19 +137,14 @@ async def complete_auth_code_login(
     async with page.expect_navigation():
         await page.get_by_role("button", name="Dex").click()
 
-    await expect(page).to_have_url(re.compile(rf"{ext_idp_service.issuer_url}*"))
-    await page.get_by_placeholder("email address").click()
-    await page.get_by_placeholder("email address").fill(ext_idp_service.user_email)
-    await page.get_by_placeholder("password").click()
-    await page.get_by_placeholder("password").fill(ext_idp_service.user_password)
-    await page.get_by_role("button", name="Login").click()
+    await ext_idp_service.complete_user_login(page)
 
 
 async def complete_device_login(
     page: Page,
     ops_test: OpsTest,
     verification_uri_complete: str,
-    ext_idp_service: Optional[ExternalIdpService] = None,
+    ext_idp_service: ExternalIdpService,
 ) -> None:
     # Go to verification URL
     await page.goto(verification_uri_complete)

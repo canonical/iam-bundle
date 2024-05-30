@@ -13,13 +13,7 @@ from playwright.async_api._generated import Browser, BrowserContext, BrowserType
 from playwright.async_api._generated import Playwright as AsyncPlaywright
 from pytest_operator.plugin import OpsTest
 
-from oauth_tools.constants import (
-    APPS,
-    DEX_CLIENT_ID,
-    DEX_CLIENT_SECRET,
-    EXTERNAL_USER_EMAIL,
-    EXTERNAL_USER_PASSWORD,
-)
+from oauth_tools.constants import APPS, DEX_CLIENT_ID, DEX_CLIENT_SECRET, EXTERNAL_USER_EMAIL
 from oauth_tools.external_idp import DexIdpService
 
 logger = logging.getLogger(__name__)
@@ -57,13 +51,8 @@ def dex_client_secret() -> str:
 
 
 @pytest.fixture
-def external_user_email() -> str:
+def user_email() -> str:
     return EXTERNAL_USER_EMAIL
-
-
-@pytest.fixture
-def external_user_password() -> str:
-    return EXTERNAL_USER_PASSWORD
 
 
 @pytest.fixture

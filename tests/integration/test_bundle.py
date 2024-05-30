@@ -243,7 +243,7 @@ async def test_authorization_code_flow(
     ops_test: OpsTest,
     page: Page,
     ext_idp_service: ExternalIdpService,
-    external_user_email: str,
+    user_email: str,
     hydra_app_name: str,
     public_traefik_app_name: str,
 ) -> None:
@@ -291,7 +291,7 @@ async def test_authorization_code_flow(
     json_resp = resp.json()
 
     assert resp.status_code == 200
-    assert json_resp["email"] == external_user_email
+    assert json_resp["email"] == user_email
 
 
 async def test_client_credentials_flow(
@@ -321,7 +321,7 @@ async def test_device_flow(
     ops_test: OpsTest,
     page: Page,
     ext_idp_service: ExternalIdpService,
-    external_user_email: str,
+    user_email: str,
     hydra_app_name: str,
     public_traefik_app_name: str,
 ) -> None:
@@ -380,4 +380,4 @@ async def test_device_flow(
     json_resp = resp.json()
 
     assert resp.status_code == 200
-    assert json_resp["email"] == external_user_email
+    assert json_resp["email"] == user_email

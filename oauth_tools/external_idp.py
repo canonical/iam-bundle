@@ -4,6 +4,7 @@
 
 import abc
 import logging
+import re
 from os.path import join
 from time import sleep
 from typing import List, Optional
@@ -13,6 +14,8 @@ from lightkube import Client, KubeConfig, codecs
 from lightkube.core.exceptions import ApiError, ObjectDeleted
 from lightkube.resources.apps_v1 import Deployment
 from lightkube.resources.core_v1 import Namespace, Pod, Service
+from playwright.async_api import expect
+from playwright.async_api._generated import Page
 from requests.exceptions import RequestException
 
 from oauth_tools.constants import (
@@ -50,12 +53,6 @@ class ExternalIdpService(abc.ABC):
 
     @property
     @abc.abstractmethod
-    def user_password(self) -> str:
-        """The test user's password."""
-        ...
-
-    @property
-    @abc.abstractmethod
     def issuer_url(self) -> str:
         """The provider's issuer URL."""
         ...
@@ -73,6 +70,11 @@ class ExternalIdpService(abc.ABC):
     @abc.abstractmethod
     def update_redirect_uri(self, redirect_uri: str) -> None:
         """Update the registered client's redirect_uri."""
+        ...
+
+    @abc.abstractmethod
+    def complete_user_login(self, page: Page) -> None:
+        """Get a page on the IDP login page and login the user."""
         ...
 
 
@@ -171,6 +173,14 @@ class DexIdpService(ExternalIdpService):
         if resp.status_code != 200:
             raise RuntimeError("Failed to deploy dex")
 
+    def _wait_until_is_ready(self) -> None:
+        """Wait until the dex service is ready."""
+        try:
+            self.__wait_until_is_ready()
+        except (RuntimeError, RequestException):
+            sleep(3)
+            self.__wait_until_is_ready()
+
     def create_idp_service(self):
         """Deploy and configure the dex service."""
         self._apply_dex_resources()
@@ -183,14 +193,6 @@ class DexIdpService(ExternalIdpService):
         self._redirect_uri = redirect_uri
         self._apply_dex_resources()
 
-    def _wait_until_is_ready(self) -> None:
-        """Wait until the dex service is ready."""
-        try:
-            self.__wait_until_is_ready()
-        except (RuntimeError, RequestException):
-            sleep(3)
-            self.__wait_until_is_ready()
-
     def remove_idp_service(self) -> None:
         """Remove and clean up the dex manifests."""
         logger.info("Deleting dex resources")
@@ -199,3 +201,12 @@ class DexIdpService(ExternalIdpService):
                 self._client.delete(type(obj), obj.metadata.name, namespace=obj.metadata.namespace)
             except ApiError:
                 pass
+
+    async def complete_user_login(self, page: Page) -> None:
+        """Get a page on the IDP login page and login the user."""
+        await expect(page).to_have_url(re.compile(rf"{self.issuer_url}*"))
+        await page.get_by_placeholder("email address").click()
+        await page.get_by_placeholder("email address").fill(self.user_email)
+        await page.get_by_placeholder("password").click()
+        await page.get_by_placeholder("password").fill(self.user_password)
+        await page.get_by_role("button", name="Login").click()
