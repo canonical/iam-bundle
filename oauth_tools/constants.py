@@ -34,8 +34,3 @@ APPS = collections.namedtuple(
     IDENTITY_PLATFORM_LOGIN_UI_OPERATOR="identity-platform-login-ui-operator",
     SELF_SIGNED_CERTIFICATES="self-signed-certificates",
 )
-
-IDENTITY_BUNDLE = collections.namedtuple("IDENTITY_BUNDLE", ["NAME", "CHANNEL"])(
-    NAME="identity-platform",
-    CHANNEL="0.1/edge",
-)
