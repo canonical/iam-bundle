@@ -100,10 +100,9 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "oauth_tools"
-version = "0.0.1"
 description = "A collection of tools useful for testing oauth interface"
 requires-python = ">=3.7"
-dynamic = ["dependencies"]
+dynamic = ["dependencies", "version"]
 
 [project.urls]
 "Homepage" = "https://github.com/canonical/iam-bundle"
@@ -116,6 +115,7 @@ namespaces = false
 
 [tool.setuptools.dynamic]
 dependencies = {file = ["oauth_tools/requirements.txt"]}
+version = {attr = "oauth_tools.__version__"}
 
 [tool.setuptools.package-data]
 oauth_tools = ["*.yaml"]
