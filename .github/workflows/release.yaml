@@ -1,0 +1,37 @@
+name: release
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+    - main
+    - "release-**"
+    - add-release-please
+
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: google-github-actions/release-please-action@4c5670f886fe259db4d11222f7dff41c1382304d # v3
+        with:
+          release-type: python
+          package-name: oauth_tools
+          path: oauth_tools/
+          default-branch: main
+          pull-request-title-pattern: "ci: release oauth_tools ${version}"
+          token: ${{ secrets.PAT_TOKEN }}
+          include-component-in-tag: true
+          extra-files: |
+            __init__.py
+        id: release
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+      - name: Workaround for https://github.com/googleapis/release-please/issues/922
+        if: ${{ steps.release.outputs.pr != '' }}
+        run: |
+          echo "Closing and reopening PR to trigger checks"
+          gh pr close ${{ fromJSON(steps.release.outputs.pr).number }} || true
+          gh pr reopen ${{ fromJSON(steps.release.outputs.pr).number }} || true
+          gh pr merge --auto --merge ${{ fromJSON(steps.release.outputs.pr).number }} || true
+        env:
+          GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}

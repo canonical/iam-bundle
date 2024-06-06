@@ -5,3 +5,5 @@
 
 from oauth_tools.external_idp import ExternalIdpService  # noqa: F401, F403
 from oauth_tools.oauth_helpers import *  # noqa: F401, F403
+
+__version__ = "0.0.1" # x-release-please-version
