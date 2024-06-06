@@ -100,7 +100,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "oauth_tools"
-version = "0.0.1"
+version = "0.0.1" # x-release-please-version
 description = "A collection of tools useful for testing oauth interface"
 requires-python = ">=3.7"
 dynamic = ["dependencies"]
