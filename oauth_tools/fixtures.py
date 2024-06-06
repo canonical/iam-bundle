@@ -30,7 +30,7 @@ def ext_idp_service(ops_test: OpsTest, client: Client) -> Generator[DexIdpServic
     """Deploy and manage the lifecycle of an Dex service."""
     ext_idp_manager = DexIdpService(client=client)
     try:
-        logger.info("Deploying dex resources")
+        logger.info("Deploying dex resources.")
 
         yield ext_idp_manager
     finally:

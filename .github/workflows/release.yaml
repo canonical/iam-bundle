@@ -17,8 +17,8 @@ jobs:
         with:
           release-type: python
           package-name: oauth_tools
-          path: oauth_tools/
-          default-branch: main
+          path: "oauth_tools"
+          default-branch: add-release-please
           pull-request-title-pattern: "ci: release oauth_tools ${version}"
           token: ${{ secrets.PAT_TOKEN }}
           extra-files: |
