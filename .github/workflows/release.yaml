@@ -15,10 +15,9 @@ jobs:
     steps:
       - uses: google-github-actions/release-please-action@4c5670f886fe259db4d11222f7dff41c1382304d # v3
         with:
-          release-type: python
+          release-type: simple
           package-name: oauth_tools
-          path: oauth_tools/
-          default-branch: main
+          default-branch: add-release-please
           pull-request-title-pattern: "ci: release oauth_tools ${version}"
           token: ${{ secrets.PAT_TOKEN }}
         id: release
