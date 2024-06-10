@@ -7,22 +7,16 @@ on:
     - main
     - "release-**"
 
-
 jobs:
   release-please:
     runs-on: ubuntu-latest
     steps:
-      - uses: google-github-actions/release-please-action@e4dc86ba9405554aeba3c6bb2d169500e7d3b4ee # v4
+      - uses: googleapis/release-please-action@v4
         with:
-          release-type: python
-          package-name: oauth_tools
-          path: oauth_tools
-          default-branch: main
-          pull-request-title-pattern: "ci: release oauth_tools ${version}"
           token: ${{ secrets.PAT_TOKEN }}
-          include-component-in-tag: true
-          extra-files: |
-            __init__.py
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+          target-branch: main
         id: release
       - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
       - name: Workaround for https://github.com/googleapis/release-please/issues/922
