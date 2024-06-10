@@ -1,0 +1,14 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "release-type": "python",
+  "include-component-in-tag": true,
+  "pull-request-title-pattern": "chore: release oauth_tools ${version}",
+  "packages": {
+    "oauth_tools": {
+      "component": "oauth_tools",
+      "release-type": "python",
+      "package-name": "oauth_tools",
+      "extra-files": ["__init__.py"]
+    }
+  }
+}

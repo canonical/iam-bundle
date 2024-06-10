@@ -6,23 +6,18 @@ on:
     branches:
     - main
     - "release-**"
-
+    - IAM-877-versioning
 
 jobs:
   release-please:
     runs-on: ubuntu-latest
     steps:
-      - uses: google-github-actions/release-please-action@4c5670f886fe259db4d11222f7dff41c1382304d # v3
+      - uses: googleapis/release-please-action@v4
         with:
-          release-type: python
-          package-name: oauth_tools
-          path: oauth_tools
-          default-branch: main
-          pull-request-title-pattern: "ci: release oauth_tools ${version}"
           token: ${{ secrets.PAT_TOKEN }}
-          include-component-in-tag: true
-          extra-files: |
-            __init__.py
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+          target-branch: IAM-877-versioning
         id: release
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
       - name: Workaround for https://github.com/googleapis/release-please/issues/922
