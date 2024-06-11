@@ -78,6 +78,7 @@ async def deploy_identity_bundle(
         "provider_id": "Dex",
     })
     await ops_test.model.wait_for_idle(
+        list(APPS),
         raise_on_blocked=False,
         status="active",
         timeout=2000,
