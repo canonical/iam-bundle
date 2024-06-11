@@ -7,6 +7,7 @@ import os
 from typing import Any, AsyncGenerator, Callable, Coroutine, Dict, Generator
 
 import pytest
+import pytest_asyncio
 from lightkube import Client, KubeConfig
 from playwright.async_api import async_playwright
 from playwright.async_api._generated import Browser, BrowserContext, BrowserType, Page
@@ -95,7 +96,7 @@ def launch_arguments(pytestconfig: Any) -> Dict:
     }
 
 
-@pytest.fixture(scope="module")
+@pytest_asyncio.fixture(scope="module")
 async def playwright() -> AsyncGenerator[AsyncPlaywright, None]:
     async with async_playwright() as playwright_object:
         yield playwright_object
@@ -110,7 +111,7 @@ def browser_type(playwright: AsyncPlaywright, browser_name: str) -> BrowserType:
     return playwright.chromium
 
 
-@pytest.fixture(scope="module")
+@pytest_asyncio.fixture(scope="module")
 async def browser_factory(
     launch_arguments: Dict, browser_type: BrowserType
 ) -> AsyncGenerator[Callable[..., Coroutine[Any, Any, Browser]], None]:
@@ -126,7 +127,7 @@ async def browser_factory(
         await browser.close()
 
 
-@pytest.fixture(scope="module")
+@pytest_asyncio.fixture(scope="module")
 async def browser(
     browser_factory: Callable[..., Coroutine[Any, Any, Browser]],
 ) -> AsyncGenerator[Browser, None]:
@@ -135,7 +136,7 @@ async def browser(
     await browser.close()
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def context_factory(
     browser: Browser,
 ) -> AsyncGenerator[Callable[..., Coroutine[Any, Any, BrowserContext]], None]:
@@ -151,7 +152,7 @@ async def context_factory(
         await context.close()
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def context(
     context_factory: Callable[..., Coroutine[Any, Any, BrowserContext]],
 ) -> AsyncGenerator[BrowserContext, None]:
@@ -160,7 +161,7 @@ async def context(
     await context.close()
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def page(context: BrowserContext) -> AsyncGenerator[Page, None]:
     page = await context.new_page()
     yield page
