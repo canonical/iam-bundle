@@ -6,6 +6,7 @@ on:
     branches:
     - main
     - "release-**"
+    - IAM-877-versioning
 
 jobs:
   release-please:
@@ -16,15 +17,4 @@ jobs:
           token: ${{ secrets.PAT_TOKEN }}
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
-          target-branch: main
-        id: release
-      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
-      - name: Workaround for https://github.com/googleapis/release-please/issues/922
-        if: ${{ steps.release.outputs.pr != '' }}
-        run: |
-          echo "Closing and reopening PR to trigger checks"
-          gh pr close ${{ fromJSON(steps.release.outputs.pr).number }} || true
-          gh pr reopen ${{ fromJSON(steps.release.outputs.pr).number }} || true
-          gh pr merge --auto --merge ${{ fromJSON(steps.release.outputs.pr).number }} || true
-        env:
-          GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
+          target-branch: IAM-877-versioning
