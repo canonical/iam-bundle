@@ -29,9 +29,8 @@ def client() -> Client:
 def ext_idp_service(ops_test: OpsTest, client: Client) -> Generator[DexIdpService, None, None]:
     """Deploy and manage the lifecycle of an Dex service."""
     ext_idp_manager = DexIdpService(client=client)
+    logger.info("Deploying dex resources")
     try:
-        logger.info("Deploying dex resources")
-
         yield ext_idp_manager
     finally:
         if ops_test.keep_model:
