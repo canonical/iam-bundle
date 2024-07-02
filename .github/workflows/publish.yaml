@@ -28,7 +28,7 @@ jobs:
           sudo --preserve-env=http_proxy,https_proxy,no_proxy pip3 install tox
 
       - name: Select charmhub channel
-        uses: canonical/charming-actions/channel@19db2e9c9da186f64b38b95d8e7e57229f3362da # 2.6.0
+        uses: canonical/charming-actions/channel@e924d251d7b924767820049a2aa6244ed050b2aa # 2.6.1
         id: select-channel
         if: ${{ inputs.destination_channel == '' }}
 
