@@ -35,7 +35,7 @@ repos:
       additional_dependencies:
         - types-PyYAML
 - repo: https://github.com/compilerla/conventional-pre-commit
-  rev: v3.2.0
+  rev: v3.3.0
   hooks:
     - id: conventional-pre-commit
       stages: [commit-msg]
