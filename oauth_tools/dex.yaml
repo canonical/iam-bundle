@@ -125,4 +125,4 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: dex           # Service account assigned to the dex pod, created above
-  namespace: {{ namespace | d("dex") }}'  # The namespace dex is running i
+  namespace: {{ namespace | d("dex") }}  # The namespace dex is running i
