@@ -11,7 +11,7 @@ from typing import List, Optional
 
 import requests
 from lightkube import Client, KubeConfig, codecs
-from lightkube.core.exceptions import ApiError, ObjectDeleted
+from lightkube.core.exceptions import ApiError
 from lightkube.resources.apps_v1 import Deployment
 from lightkube.resources.core_v1 import Namespace, Pod, Service
 from playwright.async_api import expect
@@ -136,9 +136,12 @@ class DexIdpService(ExternalIdpService):
                 },
             )
 
-    def _restart_dex(self) -> None:
+    def _restart_dex(self) -> List[str]:
+        deleted = []
         for pod in self._client.list(Pod, namespace=self.namespace, labels={"app": "dex"}):
+            deleted.append(pod.metadata.name)
             self._client.delete(Pod, pod.metadata.name, namespace=self.namespace)
+        return deleted
 
     def _apply_dex_resources(self) -> None:
         objs = self._get_dex_manifest()
@@ -147,23 +150,27 @@ class DexIdpService(ExternalIdpService):
             self._client.apply(obj, force=True)
 
         logger.info("Restarting dex")
-        self._restart_dex()
+        deleted_pod_names = self._restart_dex()
 
         logger.info("Waiting for dex to be ready")
-        self._wait_until_is_ready()
+        self._wait_until_is_ready(ignore=deleted_pod_names)
 
-    def __wait_until_is_ready(self) -> None:
-        for pod in self._client.list(Pod, namespace=self.namespace, labels={"app": "dex"}):
-            # Some pods may be deleted, if we are restarting
-            try:
+    def __wait_until_is_ready(self, ignore: Optional[List[str]] = None) -> None:
+        ignore = ignore or []
+        ready = False
+        while not ready:
+            for pod in self._client.list(Pod, namespace=self.namespace, labels={"app": "dex"}):
+                # Some pods may be deleted, if we are restarting
+                if pod.metadata.name in ignore:
+                    continue
                 self._client.wait(
                     Pod,
                     pod.metadata.name,
-                    for_conditions=["Ready", "Deleted"],
+                    for_conditions=["Ready"],
                     namespace=self.namespace,
                 )
-            except ObjectDeleted:
-                pass
+                ready = True
+                break
         self._client.wait(
             Deployment, "dex", namespace=self.namespace, for_conditions=["Available"]
         )
@@ -173,13 +180,13 @@ class DexIdpService(ExternalIdpService):
         if resp.status_code != 200:
             raise RuntimeError("Failed to deploy dex")
 
-    def _wait_until_is_ready(self) -> None:
+    def _wait_until_is_ready(self, ignore: Optional[List[str]] = None) -> None:
         """Wait until the dex service is ready."""
         try:
-            self.__wait_until_is_ready()
+            self.__wait_until_is_ready(ignore=ignore)
         except (RuntimeError, RequestException):
             sleep(3)
-            self.__wait_until_is_ready()
+            self.__wait_until_is_ready(ignore=ignore)
 
     def create_idp_service(self):
         """Deploy and configure the dex service."""
