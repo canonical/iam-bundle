@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.1](https://github.com/canonical/iam-bundle/compare/oauth_tools-v0.1.0...oauth_tools-v0.1.1) (2024-08-22)
+
+
+### Bug Fixes
+
+* eliminate a race condition in the dex restart logic ([3ca9382](https://github.com/canonical/iam-bundle/commit/3ca938225f3e380296a86db7b9148b80d4f86096))
+
 ## [0.1.0](https://github.com/canonical/iam-bundle/compare/oauth_tools-v0.0.1...oauth_tools-v0.1.0) (2024-06-11)
 
 
