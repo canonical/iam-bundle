@@ -4,3 +4,4 @@ parts:
     prime:
       - README.md
       - LICENSE
+      - bundle.yaml
