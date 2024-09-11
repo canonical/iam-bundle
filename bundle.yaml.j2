@@ -7,14 +7,14 @@ issues: https://github.com/canonical/iam-bundle/issues
 applications:
   hydra:
     charm: hydra
-    revision: 284
+    revision: 304
     channel: {{ channel|default('edge', true) }}
     scale: 1
     series: jammy
     trust: true
   kratos:
     charm: kratos
-    revision: 410
+    revision: 470
     channel: {{ channel|default('edge', true) }}
     scale: 1
     series: jammy
@@ -22,12 +22,12 @@ applications:
   kratos-external-idp-integrator:
     charm: kratos-external-idp-integrator
     channel: {{ channel|default('edge', true) }}
-    revision: 188
+    revision: 245
     scale: 1
     series: jammy
   identity-platform-login-ui-operator:
     charm: identity-platform-login-ui-operator
-    revision: 86
+    revision: 117
     channel: {{ channel|default('edge', true) }}
     scale: 1
     series: jammy
@@ -40,8 +40,8 @@ applications:
     trust: true
   self-signed-certificates:
     charm: self-signed-certificates
-    revision: 136
-    channel: latest/edge
+    revision: 155
+    channel: latest/stable
     scale: 1
     {%- if testing %}
     options:
@@ -74,6 +74,6 @@ relations:
   - [identity-platform-login-ui-operator:hydra-endpoint-info, hydra:hydra-endpoint-info]
   - [identity-platform-login-ui-operator:ui-endpoint-info, hydra:ui-endpoint-info]
   - [identity-platform-login-ui-operator:ui-endpoint-info, kratos:ui-endpoint-info]
-  - [identity-platform-login-ui-operator:kratos-endpoint-info, kratos:kratos-endpoint-info]
+  - [identity-platform-login-ui-operator:kratos-info, kratos:kratos-info]
   - [traefik-admin:certificates, self-signed-certificates:certificates]
   - [traefik-public:certificates, self-signed-certificates:certificates]
