@@ -19,8 +19,7 @@ jobs:
         with:
           provider: microk8s
           channel: 1.${{ matrix.version }}-strict/stable
-          juju-channel: 3.4
-          bootstrap-options: '--agent-version=3.4.0'
+          juju-channel: 3.4/stable
           # provide a pool of at least 3 IP addresses to the metallb addon
           microk8s-addons: "dns hostpath-storage metallb:10.64.140.43-10.64.140.49"
 
