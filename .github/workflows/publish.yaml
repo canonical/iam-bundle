@@ -23,9 +23,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo snap install charmcraft --classic
-          sudo apt-get update -yqq
-          sudo apt-get install -yqq python3-pip
-          sudo --preserve-env=http_proxy,https_proxy,no_proxy pip3 install tox
+          python -m pip install tox
 
       - name: Select charmhub channel
         uses: canonical/charming-actions/channel@934193396735701141a1decc3613818e412da606 # 2.6.3
@@ -66,4 +64,4 @@ jobs:
         if: failure()
         run: |
           printenv | sed 's;=.*;;' | sort
-          awk '{print}' /home/runner/.local/state/charmcraft/log/*.log
+          awk '{print}' /home/runner/.local/state/charmcraft/log/*.log || echo "No charmcraft logs generated."
