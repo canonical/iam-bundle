@@ -1,6 +1,7 @@
 name: Publish and release to latest/edge
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - main
@@ -37,8 +38,8 @@ jobs:
         run: |
           # destination_channel
           destination_channel="${{ inputs.destination_channel || steps.select-channel.outputs.name }}"
-          echo "setting output of destination_channel=$destination_channel"
-          echo "::set-output name=destination_channel::$destination_channel"
+          echo "destination_channel: $destination_channel"
+          echo "destination_channel=$destination_channel" >> $GITHUB_OUTPUT
 
       - name: Pack and publish bundle
         run: |
