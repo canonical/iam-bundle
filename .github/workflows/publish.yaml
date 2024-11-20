@@ -1,7 +1,13 @@
-name: Publish and release to latest/edge
+name: Publish and release to CharmHub
 
 on:
   workflow_dispatch:
+    inputs:
+      destination_channel:
+        description: CharmHub channel to publish
+        required: false
+        default: 'latest/edge'
+        type: string
   push:
     branches:
       - main
