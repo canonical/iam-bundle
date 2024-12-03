@@ -1,9 +1,10 @@
-# TODO: Remove when pr https://github.com/go-macaroon-bakery/py-macaroon-bakery/pull/95 gets merged
-macaroonbakery==1.3.4
-pytest
+-r requirements.txt
+httpx==0.27.2
 jinja2
 juju
 lightkube
-pytest-playwright
+# TODO: Remove when pr https://github.com/go-macaroon-bakery/py-macaroon-bakery/pull/95 gets merged
+macaroonbakery==1.3.4
+pytest
 pytest-operator==0.38.0
--r requirements.txt
+pytest-playwright
