@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.2](https://github.com/canonical/iam-bundle/compare/oauth_tools-v0.1.1...oauth_tools-v0.1.2) (2024-12-03)
+
+
+### Bug Fixes
+
+* pin httpx ([e0cf4ad](https://github.com/canonical/iam-bundle/commit/e0cf4ad60ad157e6cf947cc870855cdfd1cf3f20))
+
 ## [0.1.1](https://github.com/canonical/iam-bundle/compare/oauth_tools-v0.1.0...oauth_tools-v0.1.1) (2024-08-22)
 
 
