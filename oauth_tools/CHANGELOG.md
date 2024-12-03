@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.2](https://github.com/canonical/iam-bundle/compare/oauth_tools-v0.1.1...oauth_tools-v0.1.2) (2024-12-03)
+
+
+### Bug Fixes
+
+* pin dependencies ([8e86560](https://github.com/canonical/iam-bundle/commit/8e865604d2f87d00a1d1a0a09dd5bbfd45e8d12e))
+
 ## [0.1.1](https://github.com/canonical/iam-bundle/compare/oauth_tools-v0.1.0...oauth_tools-v0.1.1) (2024-08-22)
 
 
