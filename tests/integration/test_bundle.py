@@ -17,6 +17,7 @@ from integration.auth_utils import (
     device_auth_request,
     device_token_request,
     get_authorization_url,
+    refresh_token_request,
     userinfo_request,
 )
 from playwright.async_api._generated import Page
@@ -250,13 +251,15 @@ async def test_authorization_code_flow(
     # This is a hack, we just need a server to be running on the redirect_uri
     # so that when we get redirected there we don't get a connection_refused
     # error.
+    scopes = ["openid", "profile", "email", "offline_access"]
     redirect_uri = await get_reverse_proxy_app_url(ops_test, public_traefik_app_name, "dummy")
     app = ops_test.model.applications[hydra_app_name]
     action = await app.units[0].run_action(
         "create-oauth-client",
         **{
             "redirect-uris": [redirect_uri],
-            "grant-types": ["authorization_code"],
+            "grant-types": ["authorization_code", "refresh_token"],
+            "scope": scopes,
         },
     )
     res = (await action.wait()).results
@@ -266,7 +269,14 @@ async def test_authorization_code_flow(
     hydra_url = await get_reverse_proxy_app_url(ops_test, public_traefik_app_name, hydra_app_name)
 
     # Go to hydra authorization endpoint
-    await page.goto(get_authorization_url(hydra_url, client_id, redirect_uri))
+    await page.goto(
+        get_authorization_url(
+            hydra_url,
+            client_id,
+            redirect_uri,
+            scope=" ".join(scopes),
+        )
+    )
 
     await complete_auth_code_login(page, ops_test, ext_idp_service=ext_idp_service)
 
@@ -281,13 +291,33 @@ async def test_authorization_code_flow(
     resp = auth_code_grant_request(
         hydra_url, client_id, client_secret, query_params["code"][0], redirect_uri
     )
-    json_resp = resp.json()
+    token_resp = resp.json()
 
-    assert "id_token" in json_resp
-    assert "access_token" in json_resp
+    assert resp.status_code == 200
+    assert "id_token" in token_resp
+    assert "access_token" in token_resp
+    assert "refresh_token" in token_resp
 
     # Try to use the access token
-    resp = userinfo_request(hydra_url, json_resp["access_token"])
+    resp = userinfo_request(hydra_url, token_resp["access_token"])
+    json_resp = resp.json()
+
+    assert resp.status_code == 200
+    assert json_resp["email"] == user_email
+
+    # Try the refresh token
+    resp = refresh_token_request(
+        hydra_url, client_id, client_secret, token_resp["refresh_token"]
+    )
+    refresh_resp = resp.json()
+
+    assert resp.status_code == 200
+    assert "id_token" in refresh_resp
+    assert "access_token" in refresh_resp
+    assert "refresh_token" in refresh_resp
+
+    # Try to use the new access token
+    resp = userinfo_request(hydra_url, refresh_resp["access_token"])
     json_resp = resp.json()
 
     assert resp.status_code == 200
@@ -330,7 +360,7 @@ async def test_device_flow(
     action = await app.units[0].run_action(
         "create-oauth-client",
         **{
-            "grant-types": ["urn:ietf:params:oauth:grant-type:device_code"],
+            "grant-types": ["urn:ietf:params:oauth:grant-type:device_code", "refresh_token"],
             "scope": scopes,
         },
     )
@@ -366,17 +396,36 @@ async def test_device_flow(
     )
 
     # Exchange device code for tokens
-    token_resp = device_token_request(
+    resp = device_token_request(
         hydra_url, client_id, client_secret, device_auth_resp["device_code"]
     )
-    token_resp.raise_for_status()
-    json_resp = token_resp.json()
+    token_resp = resp.json()
 
-    assert "id_token" in json_resp
-    assert "access_token" in json_resp
+    assert resp.status_code == 200
+    assert "id_token" in token_resp
+    assert "access_token" in token_resp
+    assert "refresh_token" in token_resp
 
     # Try to use the access token
-    resp = userinfo_request(hydra_url, json_resp["access_token"])
+    resp = userinfo_request(hydra_url, token_resp["access_token"])
+    json_resp = resp.json()
+
+    assert resp.status_code == 200
+    assert json_resp["email"] == user_email
+
+    # Try the refresh token
+    resp = refresh_token_request(
+        hydra_url, client_id, client_secret, token_resp["refresh_token"]
+    )
+    refresh_resp = resp.json()
+
+    assert resp.status_code == 200
+    assert "id_token" in refresh_resp
+    assert "access_token" in refresh_resp
+    assert "refresh_token" in refresh_resp
+
+    # Try to use the new access token
+    resp = userinfo_request(hydra_url, refresh_resp["access_token"])
     json_resp = resp.json()
 
     assert resp.status_code == 200

@@ -57,15 +57,15 @@ async def deploy_identity_bundle(
     await ops_test.run(*deploy_cmd)
 
     # Wait for apps to go active, kratos_external_idp_integrator needs config to unblock
-    logger.info("Waiting for the identity platform to deploy")
-    await ops_test.model.wait_for_idle(
-        [getattr(APPS, k) for k in APPS._fields if k != "KRATOS_EXTERNAL_IDP_INTEGRATOR"],
-        raise_on_blocked=False,
-        status="active",
-        timeout=2000,
-    )
-
     if not ext_idp_service:
+        logger.info("Waiting for the identity platform to deploy")
+        await ops_test.model.wait_for_idle(
+            [getattr(APPS, k) for k in APPS._fields if k != "KRATOS_EXTERNAL_IDP_INTEGRATOR"],
+            raise_on_blocked=False,
+            status="active",
+            timeout=2000,
+        )
+        logger.info("Successfully deployed the identity platform")
         return
 
     logger.info("Configuring the identity platform")
@@ -77,12 +77,14 @@ async def deploy_identity_bundle(
         "scope": "profile email",
         "provider_id": "Dex",
     })
+    logger.info("Waiting for the identity platform to deploy")
     await ops_test.model.wait_for_idle(
         list(APPS),
         raise_on_blocked=False,
         status="active",
         timeout=2000,
     )
+    logger.info("Successfully deployed the identity platform")
 
     get_redirect_uri_action = (
         await ops_test.model.applications[APPS.KRATOS_EXTERNAL_IDP_INTEGRATOR]
