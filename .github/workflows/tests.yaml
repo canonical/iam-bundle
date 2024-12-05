@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-24.04
     strategy:
       matrix:
-        version: [27,28]
+        version: [30,31]
     steps:
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
@@ -19,7 +19,7 @@ jobs:
         with:
           provider: microk8s
           channel: 1.${{ matrix.version }}-strict/stable
-          juju-channel: 3.4/stable
+          juju-channel: 3.6/stable
           # provide a pool of at least 3 IP addresses to the metallb addon
           microk8s-addons: "dns hostpath-storage metallb:10.64.140.43-10.64.140.49"
 
