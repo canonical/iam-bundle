@@ -10,13 +10,18 @@ from urllib.parse import urlencode
 import requests
 
 
-def get_authorization_url(hydra_url: str, client_id: str, client_secret: str) -> str:
+def get_authorization_url(
+    hydra_url: str,
+    client_id: str,
+    client_secret: str,
+    scope: Optional[str] = "openid profile email",
+) -> str:
     params = {
         "client_id": client_id,
         "redirect_uri": client_secret,
         "response_type": "code",
         "response_mode": "query",
-        "scope": "openid profile email",
+        "scope": scope,
         "state": token_urlsafe(),
         "nonce": token_urlsafe(),
     }
@@ -48,6 +53,23 @@ def auth_code_grant_request(
         "code": auth_code,
         "grant_type": "authorization_code",
         "redirect_uri": redirect_uri,
+    }
+
+    return requests.post(
+        url,
+        data=body,
+        auth=(client_id, client_secret),
+        verify=False,
+    )
+
+
+def refresh_token_request(
+    hydra_url: str, client_id: str, client_secret: str, refresh_token: str
+) -> requests.Response:
+    url = join(hydra_url, "oauth2/token")
+    body = {
+        "refresh_token": refresh_token,
+        "grant_type": "refresh_token",
     }
 
     return requests.post(
