@@ -10,14 +10,12 @@ issues: https://github.com/canonical/iam-bundle/issues
 applications:
   hydra:
     charm: hydra
-    revision: 316
     channel: {{ channel|default('edge', true) }}
     scale: 1
     series: jammy
     trust: true
   kratos:
     charm: kratos
-    revision: 500
     channel: {{ channel|default('edge', true) }}
     scale: 1
     series: jammy
@@ -30,7 +28,6 @@ applications:
     series: jammy
   identity-platform-login-ui-operator:
     charm: identity-platform-login-ui-operator
-    revision: 146
     channel: {{ channel|default('edge', true) }}
     scale: 1
     series: jammy
@@ -53,18 +50,16 @@ applications:
     options:
       ca-common-name: demo.ca.local
     {%- endif %}
-  traefik-admin:
+  admin-ingress:
     charm: traefik-k8s
     channel: latest/stable
     revision: 176
     series: focal
     scale: 1
     trust: true
-  traefik-public:
-    charm: traefik-k8s
-    channel: latest/stable
-    revision: 176
-    series: focal
+  public-ingress:
+    charm: istio-ingress-k8s
+    channel: latest/edge
     scale: 1
     trust: true
 relations:
@@ -72,14 +67,14 @@ relations:
   - [kratos:pg-database, postgresql-k8s:database]
   - [kratos:hydra-endpoint-info, hydra:hydra-endpoint-info]
   - [kratos-external-idp-integrator:kratos-external-idp, kratos:kratos-external-idp]
-  - [hydra:admin-ingress, traefik-admin:ingress]
-  - [hydra:public-ingress, traefik-public:ingress]
-  - [kratos:admin-ingress, traefik-admin:ingress]
-  - [kratos:public-ingress, traefik-public:ingress]
-  - [identity-platform-login-ui-operator:ingress, traefik-public:ingress]
+  - [hydra:admin-ingress, admin-ingress:ingress]
+  - [hydra:public-ingress, public-ingress:ingress]
+  - [kratos:admin-ingress, admin-ingress:ingress]
+  - [kratos:public-ingress, public-ingress:ingress]
+  - [identity-platform-login-ui-operator:ingress, public-ingress:ingress]
   - [identity-platform-login-ui-operator:hydra-endpoint-info, hydra:hydra-endpoint-info]
   - [identity-platform-login-ui-operator:ui-endpoint-info, hydra:ui-endpoint-info]
   - [identity-platform-login-ui-operator:ui-endpoint-info, kratos:ui-endpoint-info]
   - [identity-platform-login-ui-operator:kratos-info, kratos:kratos-info]
-  - [traefik-admin:certificates, self-signed-certificates:certificates]
-  - [traefik-public:certificates, self-signed-certificates:certificates]
+  - [admin-ingress:certificates, self-signed-certificates:certificates]
+  - [public-ingress:certificates, self-signed-certificates:certificates]

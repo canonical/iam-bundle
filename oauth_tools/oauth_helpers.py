@@ -2,19 +2,44 @@
 # Copyright 2024 Canonical Ltd.
 # See LICENSE file for licensing details.
 
+import asyncio
 import logging
 import re
 from os.path import join
 from typing import Dict, List, Optional
 
-from playwright.async_api import expect
-from playwright.async_api._generated import BrowserContext, Page
+from playwright.async_api import BrowserContext, Page, expect
 from pytest_operator.plugin import OpsTest
 
-from oauth_tools.constants import APPS
+from oauth_tools.constants import (
+    BUNDLE_APPS,
+    IDENTITY_PLATFORM_LOGIN_UI_OPERATOR,
+    KRATOS_EXTERNAL_IDP_INTEGRATOR,
+    PUBLIC_LOAD_BALANCER,
+)
 from oauth_tools.external_idp import ExternalIdpService
 
 logger = logging.getLogger(__name__)
+
+
+async def _get_k8s_service_address(namespace: str, service_name: str) -> str:
+    cmd = [
+        "kubectl",
+        "-n",
+        namespace,
+        "get",
+        f"service/{service_name}",
+        "-o=jsonpath={.status.loadBalancer.ingress[0].ip}",
+    ]
+
+    process = await asyncio.create_subprocess_exec(
+        *cmd,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+    )
+    stdout, _ = await process.communicate()
+
+    return stdout.decode().strip() if not process.returncode else ""
 
 
 async def get_reverse_proxy_app_url(
@@ -27,8 +52,7 @@ async def get_reverse_proxy_app_url(
         ingress_app_name (str): The ingress app's name.
         app_name (str): The app's name.
     """
-    status = await ops_test.model.get_status()  # noqa: F821
-    address = status["applications"][ingress_app_name]["public-address"]
+    address = await _get_k8s_service_address(ops_test.model_name, ingress_app_name)
     return f"https://{address}/{ops_test.model.name}-{app_name}/"
 
 
@@ -37,7 +61,7 @@ async def deploy_identity_bundle(
     bundle_url: str = "identity-platform",
     bundle_channel: Optional[str] = None,
     ext_idp_service: Optional[ExternalIdpService] = None,
-):
+) -> None:
     """Deploy and configure the identity bundle and its dependencies.
 
     Args:
@@ -60,7 +84,7 @@ async def deploy_identity_bundle(
     if not ext_idp_service:
         logger.info("Waiting for the identity platform to deploy")
         await ops_test.model.wait_for_idle(
-            [getattr(APPS, k) for k in APPS._fields if k != "KRATOS_EXTERNAL_IDP_INTEGRATOR"],
+            [app for app in BUNDLE_APPS if app != KRATOS_EXTERNAL_IDP_INTEGRATOR],
             raise_on_blocked=False,
             status="active",
             timeout=2000,
@@ -69,7 +93,7 @@ async def deploy_identity_bundle(
         return
 
     logger.info("Configuring the identity platform")
-    await ops_test.model.applications[APPS.KRATOS_EXTERNAL_IDP_INTEGRATOR].set_config({
+    await ops_test.model.applications[KRATOS_EXTERNAL_IDP_INTEGRATOR].set_config({
         "client_id": ext_idp_service.client_id,
         "client_secret": ext_idp_service.client_secret,
         "provider": "generic",
@@ -79,7 +103,7 @@ async def deploy_identity_bundle(
     })
     logger.info("Waiting for the identity platform to deploy")
     await ops_test.model.wait_for_idle(
-        list(APPS),
+        BUNDLE_APPS,
         raise_on_blocked=False,
         status="active",
         timeout=2000,
@@ -87,7 +111,7 @@ async def deploy_identity_bundle(
     logger.info("Successfully deployed the identity platform")
 
     get_redirect_uri_action = (
-        await ops_test.model.applications[APPS.KRATOS_EXTERNAL_IDP_INTEGRATOR]
+        await ops_test.model.applications[KRATOS_EXTERNAL_IDP_INTEGRATOR]
         .units[0]
         .run_action("get-redirect-uri")
     )
@@ -102,14 +126,14 @@ async def deploy_identity_bundle(
 async def clean_up_identity_bundle(
     ops_test: OpsTest,
     ext_idp_service: Optional[ExternalIdpService] = None,
-):
+) -> None:
     """Clean up the identity bundle and its dependencies.
 
     Args:
         ops_test (OpsTest): The ops_test fixture.
         ext_idp_service (ExternalIdpService): The ExternalIdpService.
     """
-    for app in APPS:
+    for app in BUNDLE_APPS:
         await ops_test.model.remove_application(app, destroy_storage=True, no_wait=True)
     if ext_idp_service:
         ext_idp_service.remove_idp_service()
@@ -117,7 +141,7 @@ async def clean_up_identity_bundle(
 
 async def access_application_login_page(
     page: Page, url: str, redirect_login_url: Optional[str] = None
-):
+) -> None:
     """Navigate the browser to the login page.
 
     If the url of the application redirects to a login page, pass the application's url as url,
@@ -135,7 +159,7 @@ async def access_application_login_page(
         await expect(page).to_have_url(re.compile(rf"{redirect_login_url}*"))
 
 
-async def click_on_sign_in_button_by_text(page: Page, text: str):
+async def click_on_sign_in_button_by_text(page: Page, text: str) -> None:
     """Find and click on a button by its displayed text.
 
     Args:
@@ -146,7 +170,7 @@ async def click_on_sign_in_button_by_text(page: Page, text: str):
         await page.get_by_text(text).click()
 
 
-async def click_on_sign_in_button_by_alt_text(page: Page, alt_text: str):
+async def click_on_sign_in_button_by_alt_text(page: Page, alt_text: str) -> None:
     """Retrieve a button by its alt text.
 
     Args:
@@ -174,7 +198,7 @@ async def complete_auth_code_login(
 
     expected_url = join(
         await get_reverse_proxy_app_url(
-            ops_test, APPS.TRAEFIK_PUBLIC, APPS.IDENTITY_PLATFORM_LOGIN_UI_OPERATOR
+            ops_test, PUBLIC_LOAD_BALANCER, IDENTITY_PLATFORM_LOGIN_UI_OPERATOR
         ),
         "ui/login",
     )
@@ -202,12 +226,10 @@ async def complete_device_login(
         ext_idp_service (ExternalIdpService): The ExternalIdpService.
     """
     await page.goto(verification_uri_complete)
-    expected_url = join(
-        await get_reverse_proxy_app_url(
-            ops_test, APPS.TRAEFIK_PUBLIC, "identity-platform-login-ui-operator"
-        ),
-        "ui/device_code",
+    login_ui_url = await get_reverse_proxy_app_url(
+        ops_test, PUBLIC_LOAD_BALANCER, IDENTITY_PLATFORM_LOGIN_UI_OPERATOR
     )
+    expected_url = join(login_ui_url, "ui/device_code")
     await expect(page).to_have_url(re.compile(rf"{expected_url}*"))
 
     logger.info("Accepting the user code")
@@ -217,16 +239,11 @@ async def complete_device_login(
     await complete_auth_code_login(page, ops_test, ext_idp_service=ext_idp_service)
 
     logger.info("Device login flow is complete")
-    expected_url = join(
-        await get_reverse_proxy_app_url(
-            ops_test, APPS.TRAEFIK_PUBLIC, "identity-platform-login-ui-operator"
-        ),
-        "ui/device_complete",
-    )
+    expected_url = join(login_ui_url, "ui/device_complete")
     await page.wait_for_url(expected_url + "?*")
 
 
-async def verify_page_loads(page: Page, url: str):
+async def verify_page_loads(page: Page, url: str) -> None:
     """Verify that the correct url has been loaded.
 
     Args:

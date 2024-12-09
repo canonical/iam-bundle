@@ -9,12 +9,21 @@ from typing import Any, AsyncGenerator, Callable, Coroutine, Dict, Generator
 import pytest
 import pytest_asyncio
 from lightkube import Client, KubeConfig
-from playwright.async_api import async_playwright
-from playwright.async_api._generated import Browser, BrowserContext, BrowserType, Page
+from playwright.async_api import Browser, BrowserContext, BrowserType, Page, async_playwright
 from playwright.async_api._generated import Playwright as AsyncPlaywright
 from pytest_operator.plugin import OpsTest
 
-from oauth_tools.constants import APPS, DEX_CLIENT_ID, DEX_CLIENT_SECRET, EXTERNAL_USER_EMAIL
+from oauth_tools.constants import (
+    ADMIN_LOAD_BALANCER,
+    DEX_CLIENT_ID,
+    DEX_CLIENT_SECRET,
+    EXTERNAL_USER_EMAIL,
+    HYDRA,
+    KRATOS,
+    KRATOS_EXTERNAL_IDP_INTEGRATOR,
+    PUBLIC_LOAD_BALANCER,
+    SELF_SIGNED_CERTIFICATES,
+)
 from oauth_tools.external_idp import DexIdpService
 
 logger = logging.getLogger(__name__)
@@ -57,32 +66,32 @@ def user_email() -> str:
 
 @pytest.fixture
 def hydra_app_name() -> str:
-    return APPS.HYDRA
+    return HYDRA
 
 
 @pytest.fixture
 def kratos_app_name() -> str:
-    return APPS.KRATOS
+    return KRATOS
 
 
 @pytest.fixture
 def kratos_external_idp_integrator_app_name() -> str:
-    return APPS.KRATOS_EXTERNAL_IDP_INTEGRATOR
+    return KRATOS_EXTERNAL_IDP_INTEGRATOR
 
 
 @pytest.fixture
-def public_traefik_app_name() -> str:
-    return APPS.TRAEFIK_PUBLIC
+def public_load_balancer() -> str:
+    return PUBLIC_LOAD_BALANCER
 
 
 @pytest.fixture
-def admin_traefik_app_name() -> str:
-    return APPS.TRAEFIK_ADMIN
+def admin_load_balancer() -> str:
+    return ADMIN_LOAD_BALANCER
 
 
 @pytest.fixture
 def self_signed_certificates_app_name() -> str:
-    return APPS.SELF_SIGNED_CERTIFICATES
+    return SELF_SIGNED_CERTIFICATES
 
 
 # To learn more about playwright for python see https://github.com/microsoft/playwright-python.
