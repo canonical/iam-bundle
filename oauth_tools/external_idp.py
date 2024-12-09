@@ -14,8 +14,7 @@ from lightkube import Client, KubeConfig, codecs
 from lightkube.core.exceptions import ApiError
 from lightkube.resources.apps_v1 import Deployment
 from lightkube.resources.core_v1 import Namespace, Pod, Service
-from playwright.async_api import expect
-from playwright.async_api._generated import Page
+from playwright.async_api import Page, expect
 from requests.exceptions import RequestException
 
 from oauth_tools.constants import (
@@ -188,7 +187,7 @@ class DexIdpService(ExternalIdpService):
             sleep(3)
             self.__wait_until_is_ready(ignore=ignore)
 
-    def create_idp_service(self):
+    def create_idp_service(self) -> None:
         """Deploy and configure the dex service."""
         self._apply_dex_resources()
 

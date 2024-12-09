@@ -1,7 +1,6 @@
 # Copyright 2024 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-import collections
 import os
 from pathlib import Path
 
@@ -14,23 +13,22 @@ DEX_CLIENT_SECRET = "client_secret"
 EXTERNAL_USER_EMAIL = "admin@example.com"
 EXTERNAL_USER_PASSWORD = "password"
 
-APPS = collections.namedtuple(
-    "Apps",
-    [
-        "TRAEFIK_ADMIN",
-        "TRAEFIK_PUBLIC",
-        "HYDRA",
-        "KRATOS",
-        "KRATOS_EXTERNAL_IDP_INTEGRATOR",
-        "IDENTITY_PLATFORM_LOGIN_UI_OPERATOR",
-        "SELF_SIGNED_CERTIFICATES",
-    ],
-)(
-    TRAEFIK_ADMIN="traefik-admin",
-    TRAEFIK_PUBLIC="traefik-public",
-    HYDRA="hydra",
-    KRATOS="kratos",
-    KRATOS_EXTERNAL_IDP_INTEGRATOR="kratos-external-idp-integrator",
-    IDENTITY_PLATFORM_LOGIN_UI_OPERATOR="identity-platform-login-ui-operator",
-    SELF_SIGNED_CERTIFICATES="self-signed-certificates",
-)
+ADMIN_INGRESS = "admin-ingress"
+PUBLIC_INGRESS = "public-ingress"
+HYDRA = "hydra"
+KRATOS = "kratos"
+KRATOS_EXTERNAL_IDP_INTEGRATOR = "kratos-external-idp-integrator"
+IDENTITY_PLATFORM_LOGIN_UI_OPERATOR = "identity-platform-login-ui-operator"
+SELF_SIGNED_CERTIFICATES = "self-signed-certificates"
+BUNDLE_APPS = [
+    ADMIN_INGRESS,
+    PUBLIC_INGRESS,
+    HYDRA,
+    KRATOS,
+    KRATOS_EXTERNAL_IDP_INTEGRATOR,
+    IDENTITY_PLATFORM_LOGIN_UI_OPERATOR,
+    SELF_SIGNED_CERTIFICATES,
+]
+
+PUBLIC_LOAD_BALANCER = f"{PUBLIC_INGRESS}-istio"
+ADMIN_LOAD_BALANCER = f"{ADMIN_INGRESS}"
