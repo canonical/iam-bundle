@@ -13,12 +13,12 @@ import requests
 def get_authorization_url(
     hydra_url: str,
     client_id: str,
-    client_secret: str,
+    redirect_uri: str,
     scope: Optional[str] = "openid profile email",
 ) -> str:
     params = {
         "client_id": client_id,
-        "redirect_uri": client_secret,
+        "redirect_uri": redirect_uri,
         "response_type": "code",
         "response_mode": "query",
         "scope": scope,
