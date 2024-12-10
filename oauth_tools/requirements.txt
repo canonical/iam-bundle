@@ -3,4 +3,4 @@ pytest-playwright
 pytest_operator
 lightkube
 # TODO: remove when https://github.com/gtsystem/lightkube/issues/78 is fixed
-httpx==0.27.2
+httpx==0.28.1
