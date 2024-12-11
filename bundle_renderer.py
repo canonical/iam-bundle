@@ -15,7 +15,7 @@ from typing import MutableMapping
 from git import Repo
 from jinja2 import Environment, FileSystemLoader
 
-CHANNELS = re.compile(r"^(latest/|[0-9].[0-9]/)?(edge|beta|candidate|stable)$")
+CHANNELS = re.compile(r"^(latest/|istio/|[0-9].[0-9]/)?(edge|beta|candidate|stable)$")
 ROOT_DIR = Repo(Path(__file__), search_parent_directories=True).working_dir
 TEMPLATE_DIRS = [ROOT_DIR, Path(ROOT_DIR) / "templates"]
 
