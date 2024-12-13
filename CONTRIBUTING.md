@@ -50,10 +50,16 @@ tox -e lint          # code style
 tox -e integration   # integration test
 ```
 
-In order to run the integration test against a deployed bundle, run
+To run the integration test against a deployed bundle, run
 
 ```shell
 tox -e integration -- --model=<model name> --keep-models --no-deploy
+```
+
+To run the integration test in the Istio service mesh, run
+
+```shell
+tox -e integration -- --model=<model name> --keep-models --enable-service-mesh
 ```
 
 ## Deploy the bundle locally

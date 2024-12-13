@@ -31,31 +31,10 @@ def get_bundle_template() -> Path:
 
 @pytest.mark.skip_if_deployed
 @pytest.mark.abort_on_fail
-async def test_deploy_istio_control_plane(ops_test: OpsTest) -> None:
-    await ops_test.track_model(
-        alias="istio-system",
-        model_name="istio-system",
-        destroy_storage=True,
-    )
-    istio_system = ops_test.models.get("istio-system")
-
-    await istio_system.model.deploy(
-        application_name="istio-k8s",
-        entity_url="istio-k8s",
-        channel="latest/edge",
-        trust=True,
-    )
-    await istio_system.model.wait_for_idle(
-        ["istio-k8s"],
-        status="active",
-        timeout=5 * 60,
-    )
-
-
-@pytest.mark.skip_if_deployed
-@pytest.mark.abort_on_fail
 async def test_render_and_deploy_bundle(
-    ops_test: OpsTest, ext_idp_service: ExternalIdpService
+    ops_test: OpsTest,
+    ext_idp_service: ExternalIdpService,
+    deploy_istio_service_mesh: None,
 ) -> None:
     """Render the bundle from template and deploy using ops_test."""
     await ops_test.model.set_config({"logging-config": "<root>=WARNING; unit=DEBUG"})
