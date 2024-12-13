@@ -8,6 +8,11 @@ on:
         required: false
         default: 'latest/edge'
         type: string
+      source_branch:
+        description: Github branch from this repo to publish. If blank, will use the default branch
+        required: false
+        default: ''
+        type: string
   push:
     branches:
       - main
@@ -26,7 +31,12 @@ jobs:
     env:
       CHARMCRAFT_AUTH: ${{ secrets.CHARMCRAFT_CREDENTIALS }}
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        with:
+          fetch-depth: 0
+          ref: ${{ inputs.source_branch }}
+
       - name: Install dependencies
         run: |
           sudo snap install charmcraft --classic

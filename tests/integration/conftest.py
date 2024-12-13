@@ -88,6 +88,7 @@ async def deploy_istio_service_mesh(
         timeout=5 * 60,
     )
 
+    # TODO: remove the AuthorizationPolicy when https://github.com/canonical/istio-ingress-k8s-operator/issues/30 is fixed
     # Manually add an AuthorizationPolicy to allow all traffic
     allow_all_policy = AuthorizationPolicy(
         metadata=ObjectMeta(
