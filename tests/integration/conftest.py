@@ -8,11 +8,99 @@ from typing import AsyncGenerator, Awaitable, Callable, Optional
 from urllib.parse import urlencode
 
 import httpx
+import lightkube
+import pytest
 import pytest_asyncio
 from httpx import AsyncClient, Response
+from lightkube.generic_resource import create_namespaced_resource
+from lightkube.models.meta_v1 import ObjectMeta
+from pytest import FixtureRequest
 from pytest_operator.plugin import OpsTest
 
 pytest_plugins = ["oauth_tools.fixtures"]
+
+
+AuthorizationPolicy = create_namespaced_resource(
+    "security.istio.io",
+    "v1",
+    "AuthorizationPolicy",
+    "authorizationpolicies",
+)
+
+
+def pytest_addoption(parser: pytest.Parser):
+    parser.addoption(
+        "--enable-service-mesh",
+        action="store_true",
+        default=False,
+        help="Enable service mesh for the integration tests",
+    )
+
+
+@pytest.fixture
+def enable_service_mesh(request: FixtureRequest):
+    return request.config.getoption("--enable-service-mesh")
+
+
+@pytest_asyncio.fixture(scope="module")
+async def k8s_client() -> lightkube.AsyncClient:
+    return lightkube.AsyncClient()
+
+
+@pytest_asyncio.fixture
+async def deploy_istio_service_mesh(
+    ops_test: OpsTest, enable_service_mesh: bool, k8s_client: lightkube.AsyncClient
+) -> None:
+    # Deploy the istio control plane charm
+    await ops_test.track_model(
+        alias="istio-system",
+        model_name="istio-system",
+        destroy_storage=True,
+    )
+    istio_system = ops_test.models.get("istio-system")
+
+    await istio_system.model.deploy(
+        application_name="istio-k8s",
+        entity_url="istio-k8s",
+        channel="latest/edge",
+        trust=True,
+    )
+    await istio_system.model.wait_for_idle(
+        ["istio-k8s"],
+        status="active",
+        timeout=5 * 60,
+    )
+
+    if not enable_service_mesh:
+        return
+
+    # Deploy the istio beacon charm to add every application into the service mesh
+    await ops_test.model.deploy(
+        application_name="istio-beacon-k8s",
+        entity_url="istio-beacon-k8s",
+        channel="latest/edge",
+        config={"model-on-mesh": True},
+        trust=True,
+    )
+    await ops_test.model.wait_for_idle(
+        ["istio-beacon-k8s"],
+        status="active",
+        timeout=5 * 60,
+    )
+
+    # TODO: remove the AuthorizationPolicy when https://github.com/canonical/istio-ingress-k8s-operator/issues/30 is fixed
+    # Manually add an AuthorizationPolicy to allow all traffic
+    allow_all_policy = AuthorizationPolicy(
+        metadata=ObjectMeta(
+            name="allow-all",
+            namespace=ops_test.model_name,
+        ),
+        spec={
+            "rules": [{}],
+        },
+    )
+
+    await k8s_client.apply(allow_all_policy, field_manager="test-auth-policy")
 
 
 async def get_k8s_service_address(namespace: str, service_name: str) -> str:

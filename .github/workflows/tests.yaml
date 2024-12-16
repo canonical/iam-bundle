@@ -24,7 +24,7 @@ jobs:
           microk8s-addons: "dns hostpath-storage metallb:10.64.140.43-10.64.140.49"
 
       - name: Run integration tests
-        run: tox -e integration -- --model testing
+        run: tox -e integration -- --model testing --enable-service-mesh
 
       - name: Print hydra logs for debugging
         run: kubectl logs -n testing -c hydra hydra-0

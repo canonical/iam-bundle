@@ -20,16 +20,29 @@ bundle includes the following charmed operators:
 - [x] [istio ingress k8s operator](https://github.com/canonical/istio-ingress-k8s-operator)
 - [x] [self-signed certificates operator](https://github.com/canonical/self-signed-certificates-operator)
 
-## Deploy the bundle
+## Deploy the Bundle
 
-Before deploying the bundle, make sure the [`istio-k8s-operator`](https://github.com/canonical/istio-k8s-operator) has been
-deployed.
+Before deploying the bundle, make sure the [`istio-k8s-operator`](https://github.com/canonical/istio-k8s-operator)
+has been deployed.
 
 Run the following command to deploy the bundle from the CharmHub:
 
 ```shell
 juju deploy identity-platform --channel <channel, e.g. edge> --trust
 ```
+
+### Join the Service Mesh
+
+To include the bundle in a service mesh, run the following command to deploy
+the [`istio-beacon-k8s`](https://github.com/canonical/istio-beacon-k8s-operator)
+in the same Juju model:
+
+```shell
+juju deploy istio-beacon-k8s --channel <channel, e.g. edge> --config model-on-mesh=True --trust
+```
+
+This command will integrate every application in the bundle into the Istio
+service mesh.
 
 ## Contributing
 
