@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.3](https://github.com/canonical/iam-bundle/compare/oauth_tools-v0.1.2...oauth_tools-v0.1.3) (2024-12-19)
+
+
+### Bug Fixes
+
+* add tests for refresh token ([3624e33](https://github.com/canonical/iam-bundle/commit/3624e336ca66726a060a0678afa73d3d7cb86acc))
+
 ## [0.1.2](https://github.com/canonical/iam-bundle/compare/oauth_tools-v0.1.1...oauth_tools-v0.1.2) (2024-12-03)
 
 
