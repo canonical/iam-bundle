@@ -1,9 +1,9 @@
 -r requirements.txt
 # TODO: remove when https://github.com/gtsystem/lightkube/issues/78 is fixed
-httpx==0.27.2
+httpx==0.28.1
 jinja2
 juju
 lightkube
 pytest
-pytest-operator==0.38.0
+pytest-operator==0.39.0
 pytest-playwright
