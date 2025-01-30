@@ -33,7 +33,7 @@ jobs:
           python -m pip install tox
 
       - name: Select charmhub channel
-        uses: canonical/charming-actions/channel@934193396735701141a1decc3613818e412da606 # 2.6.3
+        uses: canonical/charming-actions/channel@1753e0803f70445132e92acd45c905aba6473225 # 2.7.0
         id: select-channel
         if: ${{ inputs.destination_channel == '' }}
 
