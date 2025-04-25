@@ -28,6 +28,11 @@ To deploy the bundle from the CharmHub, run the following:
 juju deploy identity-platform --channel <channel, e.g. edge> --trust
 ```
 
+## Security
+
+Please see [SECURITY.md](https://github.com/canonical/iam-bundle/blob/main/SECURITY.md)
+for guidelines on reporting security issues.
+
 ## Contributing
 
 Please refer to the [contribution documentation](CONTRIBUTING.md) to learn how
