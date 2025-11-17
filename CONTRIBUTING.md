@@ -23,8 +23,8 @@ contributing to the Identity Platform bundle.
 You can use the environments created by `tox` for test development:
 
 ```shell
-tox --notest -e integration
-source .tox/integration/bin/activate
+tox devenv
+source venv/bin/activate
 ```
 
 ### Debugging Playwright tests
