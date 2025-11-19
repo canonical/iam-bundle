@@ -11,6 +11,8 @@ applications:
   hydra:
     charm: hydra
     revision: 339
+    resources:
+      oci-image: ghcr.io/canonical/hydra:2.3.0-canonical
     channel: {{ channel|default('edge', true) }}
     scale: 1
     series: jammy
@@ -18,6 +20,8 @@ applications:
   kratos:
     charm: kratos
     revision: 500
+    resources:
+      oci-image: ghcr.io/canonical/kratos:1.3.1
     channel: {{ channel|default('edge', true) }}
     scale: 1
     series: jammy
@@ -31,6 +35,8 @@ applications:
   identity-platform-login-ui-operator:
     charm: identity-platform-login-ui-operator
     revision: 146
+    resources:
+      oci-image: ghcr.io/canonical/identity-platform-login-ui:v0.21.2
     channel: {{ channel|default('edge', true) }}
     scale: 1
     series: jammy
@@ -38,6 +44,8 @@ applications:
   postgresql-k8s:
     charm: postgresql-k8s
     channel: 14/stable
+    resources:
+      postgresql-image: ghcr.io/canonical/charmed-postgresql@sha256:e2283194f7f8d9997fb06f0fd1ab0ec3938ce73ac001133bd8fd393ebe83acc7
     series: jammy
     scale: 1
     trust: true
@@ -57,6 +65,8 @@ applications:
     charm: traefik-k8s
     channel: latest/stable
     revision: 176
+    resources:
+      traefik-image: docker.io/ubuntu/traefik:2-22.04
     series: focal
     scale: 1
     trust: true
@@ -64,6 +74,8 @@ applications:
     charm: traefik-k8s
     channel: latest/stable
     revision: 176
+    resources:
+      traefik-image: docker.io/ubuntu/traefik:2-22.04
     series: focal
     scale: 1
     trust: true
