@@ -5,5 +5,5 @@ jinja2
 juju
 lightkube
 pytest
-pytest-operator==0.43.1
+pytest-operator==0.43.2
 pytest-playwright
