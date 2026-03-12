@@ -17,30 +17,30 @@ repos:
       additional_dependencies:
         - tomli
 - repo: https://github.com/pycqa/isort
-  rev: 6.0.1
+  rev: 6.1.0
   hooks:
     - id: isort
       name: isort (python)
 - repo: https://github.com/astral-sh/ruff-pre-commit
-  rev: v0.13.1
+  rev: v0.15.6
   hooks:
     - id: ruff
       args: [--fix, --exit-non-zero-on-fix]
     - id: ruff-format
 - repo: https://github.com/pre-commit/mirrors-mypy
-  rev: v1.18.2
+  rev: v1.19.1
   hooks:
     - id: mypy
       args: ["--config-file", "pyproject.toml"]
       additional_dependencies:
         - types-PyYAML
 - repo: https://github.com/compilerla/conventional-pre-commit
-  rev: v4.2.0
+  rev: v4.4.0
   hooks:
     - id: conventional-pre-commit
       stages: [commit-msg]
       args: [--strict]
 - repo: https://github.com/igorshubovych/markdownlint-cli
-  rev: v0.45.0
+  rev: v0.48.0
   hooks:
   - id: markdownlint
