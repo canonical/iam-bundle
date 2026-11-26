@@ -1,6 +1,6 @@
 -r requirements.txt
 # TODO: remove when https://github.com/gtsystem/lightkube/issues/78 is fixed
-httpx==0.28.1
+httpx==0.29.0
 jinja2
 juju
 lightkube
